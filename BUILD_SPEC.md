@@ -244,10 +244,10 @@ CREATE TABLE alerts (
 - [x] Alert notifications (email + in-app)
 
 ### Phase 3: Intelligence (Week 3-4)
-- [ ] Wine valuation estimates (API integration)
-- [ ] Search & filter inventory
-- [ ] Reports (inventory by region, value, etc.)
-- [ ] Export collections (CSV, PDF)
+- [x] Wine valuation estimates (API integration)
+- [x] Search & filter inventory
+- [x] Reports (inventory by region, value, etc.)
+- [x] Export collections (CSV, PDF)
 
 ---
 

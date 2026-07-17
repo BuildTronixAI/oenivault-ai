@@ -27,4 +27,4 @@ React (Vite)  ──REST/JWT──►  Express API  ──SQL──►  PostgreS
 
 1. **Phase 1** — Auth, inventory CRUD, customer portal, admin dashboard
 2. **Phase 2** — IoT climate ingest, Socket.io live updates, threshold alerts, in-app + email notifications
-3. **Phase 3** — Valuations, search/filter, reports, export
+3. **Phase 3** — Valuations, search/filter, reports, CSV/PDF export

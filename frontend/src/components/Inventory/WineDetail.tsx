@@ -1,13 +1,21 @@
 import { useState, type FormEvent } from 'react';
 import type { Wine, WineInput } from '../../types';
 
+interface ValuationInfo {
+  estimatedValue: number;
+  confidence: string;
+  source: string;
+  rationale: string[];
+}
+
 interface Props {
   wine: Wine;
   onSave: (id: string, input: Partial<WineInput>) => Promise<void>;
+  onValuate?: (id: string) => Promise<{ wine: Wine; valuation: ValuationInfo }>;
   onClose: () => void;
 }
 
-export function WineDetail({ wine, onSave, onClose }: Props) {
+export function WineDetail({ wine, onSave, onValuate, onClose }: Props) {
   const [name, setName] = useState(wine.name);
   const [vintage, setVintage] = useState(wine.vintage?.toString() ?? '');
   const [region, setRegion] = useState(wine.region ?? '');
@@ -18,7 +26,9 @@ export function WineDetail({ wine, onSave, onClose }: Props) {
   const [estimatedValue, setEstimatedValue] = useState(
     wine.estimated_value != null ? String(wine.estimated_value) : ''
   );
+  const [valuation, setValuation] = useState<ValuationInfo | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [estimating, setEstimating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent) {
@@ -41,6 +51,21 @@ export function WineDetail({ wine, onSave, onClose }: Props) {
       setError(err instanceof Error ? err.message : 'Failed to update');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleEstimate() {
+    if (!onValuate) return;
+    setEstimating(true);
+    setError(null);
+    try {
+      const result = await onValuate(wine.id);
+      setEstimatedValue(String(result.valuation.estimatedValue));
+      setValuation(result.valuation);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Valuation failed');
+    } finally {
+      setEstimating(false);
     }
   }
 
@@ -88,7 +113,21 @@ export function WineDetail({ wine, onSave, onClose }: Props) {
           <label className="label-field" htmlFor="edit-value">
             Est. value
           </label>
-          <input id="edit-value" className="input-field" type="number" step="0.01" value={estimatedValue} onChange={(e) => setEstimatedValue(e.target.value)} />
+          <div className="flex gap-2">
+            <input
+              id="edit-value"
+              className="input-field"
+              type="number"
+              step="0.01"
+              value={estimatedValue}
+              onChange={(e) => setEstimatedValue(e.target.value)}
+            />
+            {onValuate && (
+              <button type="button" className="btn-secondary whitespace-nowrap" onClick={() => void handleEstimate()} disabled={estimating}>
+                {estimating ? '…' : 'Estimate'}
+              </button>
+            )}
+          </div>
         </div>
         <div className="md:col-span-2">
           <label className="label-field" htmlFor="edit-notes">
@@ -97,6 +136,18 @@ export function WineDetail({ wine, onSave, onClose }: Props) {
           <textarea id="edit-notes" className="input-field min-h-[80px]" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
       </div>
+      {valuation && (
+        <div className="border-l-2 border-gold-500 bg-cellar-800/40 px-4 py-3 text-sm">
+          <p className="text-gold-300">
+            ${valuation.estimatedValue.toFixed(2)} · {valuation.confidence} confidence · {valuation.source}
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-4 text-parchment-200/60">
+            {valuation.rationale.map((r) => (
+              <li key={r}>{r}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       {error && <p className="text-sm text-burgundy-400">{error}</p>}
       <div className="flex gap-3">
         <button type="submit" className="btn-primary" disabled={submitting}>

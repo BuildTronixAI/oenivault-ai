@@ -80,6 +80,13 @@ cd backend && npm run simulate:climate
 SIMULATE_ALERT=1 npm run simulate:climate
 ```
 
+## Phase 3 (intelligence)
+
+- [x] Wine valuation estimates (heuristic + optional `VALUATION_API_URL`)
+- [x] Inventory search & filters
+- [x] Reports: inventory / value / climate
+- [x] Export CSV + PDF
+
 ## Repo layout
 
 See [BUILD_SPEC.md](./BUILD_SPEC.md) and [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
