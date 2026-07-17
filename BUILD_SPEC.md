@@ -238,10 +238,10 @@ CREATE TABLE alerts (
 - [x] Admin dashboard (see all collections, customers)
 
 ### Phase 2: Climate Monitoring (Week 2-3)
-- [ ] Connect IoT sensors (temperature/humidity)
-- [ ] Real-time climate display
-- [ ] Alert system (high temp, low humidity, etc.)
-- [ ] Alert notifications (email + in-app)
+- [x] Connect IoT sensors (temperature/humidity)
+- [x] Real-time climate display
+- [x] Alert system (high temp, low humidity, etc.)
+- [x] Alert notifications (email + in-app)
 
 ### Phase 3: Intelligence (Week 3-4)
 - [ ] Wine valuation estimates (API integration)

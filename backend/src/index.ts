@@ -1,9 +1,11 @@
 import dotenv from 'dotenv';
+import http from 'http';
 import express from 'express';
 import cors from 'cors';
 import { pool } from './database/pool';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
+import { initRealtime } from './realtime/socket';
 import authRoutes from './routes/auth';
 import inventoryRoutes from './routes/inventory';
 import collectionRoutes from './routes/collections';
@@ -27,9 +29,19 @@ app.use(express.json());
 app.get('/api/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
-    res.json({ status: 'ok', database: 'connected', timestamp: new Date().toISOString() });
+    res.json({
+      status: 'ok',
+      database: 'connected',
+      realtime: true,
+      timestamp: new Date().toISOString(),
+    });
   } catch {
-    res.status(503).json({ status: 'degraded', database: 'disconnected', timestamp: new Date().toISOString() });
+    res.status(503).json({
+      status: 'degraded',
+      database: 'disconnected',
+      realtime: true,
+      timestamp: new Date().toISOString(),
+    });
   }
 });
 
@@ -41,7 +53,10 @@ app.use('/api/climate', climateRoutes);
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
+const server = http.createServer(app);
+initRealtime(server);
+
+server.listen(PORT, () => {
   logger.info(`OeniVault API listening on http://localhost:${PORT}`);
 });
 

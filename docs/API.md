@@ -55,13 +55,34 @@ Auth: `Authorization: Bearer <accessToken>` unless noted.
 | GET | `/api/customers/:id` | Admin | Profile + collections |
 | PATCH | `/api/customers/:id` | Admin | Update customer |
 
-## Climate (stubs for Phase 2)
+## Climate
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/api/climate/readings` | Yes | Recent readings |
+| POST | `/api/climate/ingest` | Sensor API key (`x-sensor-key`) | Ingest temp/humidity reading |
+| GET | `/api/climate/sensors` | Yes | List sensors |
+| GET | `/api/climate/latest` | Yes | Latest reading per sensor |
+| GET | `/api/climate/readings` | Yes | Last 24h readings (`?hours=`) |
+| GET | `/api/climate/readings/:sensorId` | Yes | Single sensor history |
 | GET/POST | `/api/climate/alerts` | Yes | Active alerts |
 | PATCH | `/api/climate/alerts/:id` | Admin | Resolve alert |
+| GET | `/api/climate/thresholds` | Yes | Warn/critical thresholds |
+
+### Ingest body
+
+```json
+{ "temperature": 55.2, "humidity": 62.0 }
+```
+
+Header: `x-sensor-key: sensor_zone_a_demo_key`
+
+### Realtime (Socket.io)
+
+Connect with JWT in `auth.token`. Events:
+- `climate:reading` — new reading
+- `climate:alert` — new alert
+
+Email alerts send when `SMTP_*` env vars are set; otherwise logged to the API console.
 
 ## Health
 

@@ -69,4 +69,51 @@ export interface Alert {
   message: string | null;
   resolved: boolean;
   created_at: string;
+  resolved_at?: string | null;
+}
+
+export interface ClimateSensor {
+  id: string;
+  facility_id: string;
+  sensor_name: string | null;
+  sensor_type: string | null;
+  location: string | null;
+  active: boolean;
+  created_at: string;
+  api_key?: string | null;
+}
+
+export interface ClimateReading {
+  id: string;
+  sensor_id: string;
+  temperature: string | number | null;
+  humidity: string | number | null;
+  timestamp: string;
+  alert_triggered: boolean;
+  sensor_name?: string | null;
+  facility_id?: string;
+  location?: string | null;
+}
+
+export interface LatestClimate {
+  sensor_id: string;
+  sensor_name: string | null;
+  sensor_type: string | null;
+  location: string | null;
+  facility_id: string;
+  temperature: string | number | null;
+  humidity: string | number | null;
+  timestamp: string | null;
+  alert_triggered: boolean | null;
+}
+
+export interface ClimateThresholds {
+  tempWarnMin: number;
+  tempWarnMax: number;
+  tempCritMin: number;
+  tempCritMax: number;
+  humidityWarnMin: number;
+  humidityWarnMax: number;
+  humidityCritMin: number;
+  humidityCritMax: number;
 }

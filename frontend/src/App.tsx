@@ -7,6 +7,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { InventoryPage } from './pages/InventoryPage';
 import { CustomersPage } from './pages/CustomersPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ClimatePage } from './pages/ClimatePage';
 
 function GuestOnly({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -43,6 +44,7 @@ export default function App() {
       <Route element={<AppLayout />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/inventory" element={<InventoryPage />} />
+        <Route path="/climate" element={<ClimatePage />} />
         <Route
           path="/customers"
           element={

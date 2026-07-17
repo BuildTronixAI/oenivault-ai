@@ -25,6 +25,9 @@ export function Sidebar({ onNavigate, className = '' }: SidebarProps) {
         <NavLink to="/inventory" className={linkClass}>
           Inventory
         </NavLink>
+        <NavLink to="/climate" className={linkClass}>
+          Climate
+        </NavLink>
         {isAdmin && (
           <NavLink to="/customers" className={linkClass}>
             Customers

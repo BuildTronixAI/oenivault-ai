@@ -104,17 +104,31 @@ async function main() {
   }
 
   await pool.query(
-    `INSERT INTO climate_sensors (id, facility_id, sensor_name, sensor_type, location, active)
+    `INSERT INTO climate_sensors (id, facility_id, sensor_name, sensor_type, api_key, location, active)
      VALUES
-       ('e0000000-0000-4000-8000-000000000001', $1, 'Vault Zone A', 'temperature', 'Main cellar — aisle A', TRUE),
-       ('e0000000-0000-4000-8000-000000000002', $1, 'Vault Zone A Humidity', 'humidity', 'Main cellar — aisle A', TRUE)
-     ON CONFLICT (id) DO NOTHING`,
+       ('e0000000-0000-4000-8000-000000000001', $1, 'Vault Zone A', 'combined', 'sensor_zone_a_demo_key', 'Main cellar — aisle A', TRUE),
+       ('e0000000-0000-4000-8000-000000000002', $1, 'Vault Zone B', 'combined', 'sensor_zone_b_demo_key', 'Main cellar — aisle B', TRUE)
+     ON CONFLICT (id) DO UPDATE SET
+       api_key = EXCLUDED.api_key,
+       sensor_type = EXCLUDED.sensor_type,
+       sensor_name = EXCLUDED.sensor_name,
+       active = TRUE`,
     [FACILITY_ID]
+  );
+
+  // Seed a few normal readings so the climate UI is not empty
+  await pool.query(
+    `INSERT INTO climate_readings (sensor_id, temperature, humidity, alert_triggered)
+     SELECT 'e0000000-0000-4000-8000-000000000001', 55.2, 62.0, FALSE
+     WHERE NOT EXISTS (
+       SELECT 1 FROM climate_readings WHERE sensor_id = 'e0000000-0000-4000-8000-000000000001'
+     )`
   );
 
   console.log('Seed complete.');
   console.log('  Admin:    admin@oenivault.ai / Admin123!');
   console.log('  Customer: collector@example.com / Customer123!');
+  console.log('  Sensor keys: sensor_zone_a_demo_key, sensor_zone_b_demo_key');
   await pool.end();
 }
 
