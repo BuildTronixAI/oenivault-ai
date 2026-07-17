@@ -4,17 +4,32 @@ import { useInventory } from '../hooks/useInventory';
 import { WineList } from '../components/Inventory/WineList';
 import { AddWine } from '../components/Inventory/AddWine';
 import { WineDetail } from '../components/Inventory/WineDetail';
+import { InventoryFiltersBar } from '../components/Inventory/InventoryFiltersBar';
 import type { Wine, WineInput } from '../types';
 
 export function InventoryPage() {
   const { user, isAdmin } = useAuth();
-  const { wines, collections, loading, addWine, createCollection, updateWine, deleteWine, refresh } =
-    useInventory();
+  const {
+    wines,
+    collections,
+    filterOptions,
+    filters,
+    setFilters,
+    loading,
+    addWine,
+    createCollection,
+    updateWine,
+    deleteWine,
+    valuateWine,
+    downloadExport,
+    refresh,
+  } = useInventory();
   const [mode, setMode] = useState<'list' | 'add' | 'edit' | 'collection'>('list');
   const [selected, setSelected] = useState<Wine | null>(null);
   const [collectionName, setCollectionName] = useState('');
   const [collectionError, setCollectionError] = useState<string | null>(null);
   const [creatingCollection, setCreatingCollection] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   async function handleAdd(input: WineInput) {
     await addWine(input);
@@ -53,6 +68,15 @@ export function InventoryPage() {
     }
   }
 
+  async function handleExport(format: 'csv' | 'pdf') {
+    setExportError(null);
+    try {
+      await downloadExport(format);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Export failed');
+    }
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -64,6 +88,12 @@ export function InventoryPage() {
         </div>
         {mode === 'list' && (
           <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-secondary" onClick={() => void handleExport('csv')}>
+              Export CSV
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => void handleExport('pdf')}>
+              Export PDF
+            </button>
             {!isAdmin && (
               <button type="button" className="btn-secondary" onClick={() => setMode('collection')}>
                 New collection
@@ -75,6 +105,18 @@ export function InventoryPage() {
           </div>
         )}
       </div>
+
+      {exportError && <p className="text-sm text-burgundy-400">{exportError}</p>}
+
+      {mode === 'list' && (
+        <InventoryFiltersBar
+          filters={filters}
+          regions={filterOptions.regions}
+          varietals={filterOptions.varietals}
+          collections={collections}
+          onChange={setFilters}
+        />
+      )}
 
       {mode === 'collection' && (
         <form
@@ -115,6 +157,7 @@ export function InventoryPage() {
         <WineDetail
           wine={selected}
           onSave={handleUpdate}
+          onValuate={valuateWine}
           onClose={() => {
             setSelected(null);
             setMode('list');
@@ -123,18 +166,21 @@ export function InventoryPage() {
       )}
 
       {mode === 'list' && (
-        <WineList
-          wines={wines}
-          loading={loading}
-          isAdmin={isAdmin}
-          onSelect={(w) => {
-            setSelected(w);
-            setMode('edit');
-          }}
-          onDelete={async (id) => {
-            await deleteWine(id);
-          }}
-        />
+        <>
+          <p className="text-sm text-parchment-200/50">{loading ? 'Loading…' : `${wines.length} wines`}</p>
+          <WineList
+            wines={wines}
+            loading={loading}
+            isAdmin={isAdmin}
+            onSelect={(w) => {
+              setSelected(w);
+              setMode('edit');
+            }}
+            onDelete={async (id) => {
+              await deleteWine(id);
+            }}
+          />
+        </>
       )}
     </div>
   );

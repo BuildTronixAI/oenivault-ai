@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useInventory } from '../../hooks/useInventory';
 import { useClimate } from '../../hooks/useClimate';
+import { ClimateMonitor } from './ClimateMonitor';
 import { apiRequest } from '../../services/api';
 import { useEffect, useState } from 'react';
 import type { User } from '../../types';
@@ -78,9 +79,14 @@ export function AdminDashboard() {
 
       {alerts.length > 0 && (
         <section>
-          <h2 className="mb-3 font-display text-xl text-gold-300">Active alerts</h2>
+          <div className="mb-3 flex items-end justify-between">
+            <h2 className="font-display text-xl text-gold-300">Active alerts</h2>
+            <Link to="/climate" className="text-sm text-gold-400 hover:underline">
+              Open climate
+            </Link>
+          </div>
           <ul className="space-y-2">
-            {alerts.map((a) => (
+            {alerts.slice(0, 5).map((a) => (
               <li key={a.id} className="border-l-2 border-burgundy-500 bg-cellar-800/50 px-4 py-3 text-sm">
                 <span className="font-medium capitalize text-burgundy-400">{a.severity}</span>
                 <span className="ml-2 text-parchment-200/80">{a.message}</span>
@@ -89,6 +95,16 @@ export function AdminDashboard() {
           </ul>
         </section>
       )}
+
+      <section>
+        <div className="mb-3 flex items-end justify-between">
+          <h2 className="font-display text-xl text-gold-300">Climate snapshot</h2>
+          <Link to="/climate" className="text-sm text-gold-400 hover:underline">
+            Full monitor
+          </Link>
+        </div>
+        <ClimateMonitor compact />
+      </section>
     </div>
   );
 }

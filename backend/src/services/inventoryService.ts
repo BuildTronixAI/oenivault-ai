@@ -3,15 +3,65 @@ import { AppError } from '../middleware/errorHandler';
 import { AuthUser } from '../middleware/auth';
 import { Wine } from '../models/Wine';
 import { Collection } from '../models/Collection';
+import { WineFilters } from '../utils/wineFilters';
 
-export async function listWines(user: AuthUser) {
+const SORT_MAP: Record<NonNullable<WineFilters['sort']>, string> = {
+  name: 'w.name',
+  vintage: 'w.vintage',
+  value: 'w.estimated_value',
+  created: 'w.created_at',
+  quantity: 'w.quantity',
+};
+
+export async function listWines(user: AuthUser, filters: WineFilters = {}) {
+  const params: unknown[] = [];
+  const where: string[] = [];
+
+  if (user.role !== 'admin') {
+    params.push(user.id);
+    where.push(`c.customer_id = $${params.length}`);
+  }
+
+  if (filters.q) {
+    params.push(`%${filters.q}%`);
+    where.push(
+      `(w.name ILIKE $${params.length} OR w.region ILIKE $${params.length} OR w.varietal ILIKE $${params.length} OR w.location_code ILIKE $${params.length} OR w.notes ILIKE $${params.length})`
+    );
+  }
+  if (filters.region) {
+    params.push(`%${filters.region}%`);
+    where.push(`w.region ILIKE $${params.length}`);
+  }
+  if (filters.varietal) {
+    params.push(`%${filters.varietal}%`);
+    where.push(`w.varietal ILIKE $${params.length}`);
+  }
+  if (filters.vintageMin != null) {
+    params.push(filters.vintageMin);
+    where.push(`w.vintage >= $${params.length}`);
+  }
+  if (filters.vintageMax != null) {
+    params.push(filters.vintageMax);
+    where.push(`w.vintage <= $${params.length}`);
+  }
+  if (filters.collectionId) {
+    params.push(filters.collectionId);
+    where.push(`w.collection_id = $${params.length}`);
+  }
+
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  const sortCol = SORT_MAP[filters.sort ?? 'created'];
+  const order = filters.order === 'asc' ? 'ASC' : 'DESC';
+
   if (user.role === 'admin') {
     const result = await pool.query<Wine & { collection_name: string; customer_name: string | null }>(
       `SELECT w.*, c.name AS collection_name, u.full_name AS customer_name
        FROM wines w
        JOIN collections c ON c.id = w.collection_id
        JOIN users u ON u.id = c.customer_id
-       ORDER BY w.created_at DESC`
+       ${whereSql}
+       ORDER BY ${sortCol} ${order} NULLS LAST`,
+      params
     );
     return result.rows;
   }
@@ -20,11 +70,35 @@ export async function listWines(user: AuthUser) {
     `SELECT w.*, c.name AS collection_name
      FROM wines w
      JOIN collections c ON c.id = w.collection_id
-     WHERE c.customer_id = $1
-     ORDER BY w.created_at DESC`,
-    [user.id]
+     ${whereSql}
+     ORDER BY ${sortCol} ${order} NULLS LAST`,
+    params
   );
   return result.rows;
+}
+
+export async function getFilterOptions(user: AuthUser) {
+  const params = user.role === 'admin' ? [] : [user.id];
+  const regionSql =
+    user.role === 'admin'
+      ? `SELECT DISTINCT region FROM wines WHERE region IS NOT NULL AND region <> '' ORDER BY 1`
+      : `SELECT DISTINCT w.region FROM wines w JOIN collections c ON c.id = w.collection_id
+         WHERE c.customer_id = $1 AND w.region IS NOT NULL AND w.region <> '' ORDER BY 1`;
+  const varietalSql =
+    user.role === 'admin'
+      ? `SELECT DISTINCT varietal FROM wines WHERE varietal IS NOT NULL AND varietal <> '' ORDER BY 1`
+      : `SELECT DISTINCT w.varietal FROM wines w JOIN collections c ON c.id = w.collection_id
+         WHERE c.customer_id = $1 AND w.varietal IS NOT NULL AND w.varietal <> '' ORDER BY 1`;
+
+  const [regionRes, varietalRes] = await Promise.all([
+    pool.query<{ region: string }>(regionSql, params),
+    pool.query<{ varietal: string }>(varietalSql, params),
+  ]);
+
+  return {
+    regions: regionRes.rows.map((r) => r.region),
+    varietals: varietalRes.rows.map((r) => r.varietal),
+  };
 }
 
 export async function getWine(id: string, user: AuthUser) {
@@ -178,4 +252,25 @@ export async function createCollection(
     [input.customerId, input.facilityId, input.name, input.totalCases ?? 0]
   );
   return result.rows[0];
+}
+
+export async function applyValuation(id: string, user: AuthUser, persist = true) {
+  const { estimateValue } = await import('./valuationService');
+  const wine = await getWine(id, user);
+  const valuation = await estimateValue({
+    name: wine.name,
+    vintage: wine.vintage,
+    region: wine.region,
+    varietal: wine.varietal,
+  });
+
+  if (!persist) {
+    return { wine, valuation };
+  }
+
+  const result = await pool.query<Wine>(
+    `UPDATE wines SET estimated_value = $2 WHERE id = $1 RETURNING *`,
+    [id, valuation.estimatedValue]
+  );
+  return { wine: result.rows[0], valuation };
 }

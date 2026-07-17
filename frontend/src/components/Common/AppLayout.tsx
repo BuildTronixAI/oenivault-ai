@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { ClimateProvider } from '../../hooks/useClimate';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { Footer } from './Footer';
@@ -20,15 +21,17 @@ export function AppLayout() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-cellar-radial">
-      <Header />
-      <div className="flex flex-1">
-        <Sidebar className="hidden md:block" />
-        <main className="flex-1 overflow-auto px-4 py-6 md:px-8">
-          <Outlet />
-        </main>
+    <ClimateProvider>
+      <div className="flex min-h-screen flex-col bg-cellar-radial">
+        <Header />
+        <div className="flex flex-1">
+          <Sidebar className="hidden md:block" />
+          <main className="flex-1 overflow-auto px-4 py-6 md:px-8">
+            <Outlet />
+          </main>
+        </div>
+        <Footer />
       </div>
-      <Footer />
-    </div>
+    </ClimateProvider>
   );
 }

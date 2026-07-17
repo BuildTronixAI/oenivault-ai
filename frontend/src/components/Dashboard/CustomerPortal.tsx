@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useInventory } from '../../hooks/useInventory';
+import { ClimateMonitor } from './ClimateMonitor';
 
 function formatValue(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
@@ -62,6 +63,16 @@ export function CustomerPortal() {
             <li className="py-8 text-center text-parchment-200/50">No wines in your collection yet.</li>
           )}
         </ul>
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-end justify-between">
+          <h2 className="font-display text-xl text-gold-300">Vault climate</h2>
+          <Link to="/climate" className="text-sm text-gold-400 hover:underline">
+            Details
+          </Link>
+        </div>
+        <ClimateMonitor compact />
       </section>
     </div>
   );

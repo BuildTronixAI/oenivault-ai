@@ -55,14 +55,55 @@ Auth: `Authorization: Bearer <accessToken>` unless noted.
 | GET | `/api/customers/:id` | Admin | Profile + collections |
 | PATCH | `/api/customers/:id` | Admin | Update customer |
 
-## Climate (stubs for Phase 2)
+## Climate
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/api/climate/readings` | Yes | Recent readings |
+| POST | `/api/climate/ingest` | Sensor API key (`x-sensor-key`) | Ingest temp/humidity reading |
+| GET | `/api/climate/sensors` | Yes | List sensors |
+| GET | `/api/climate/latest` | Yes | Latest reading per sensor |
+| GET | `/api/climate/readings` | Yes | Last 24h readings (`?hours=`) |
+| GET | `/api/climate/readings/:sensorId` | Yes | Single sensor history |
 | GET/POST | `/api/climate/alerts` | Yes | Active alerts |
 | PATCH | `/api/climate/alerts/:id` | Admin | Resolve alert |
+| GET | `/api/climate/thresholds` | Yes | Warn/critical thresholds |
+
+### Ingest body
+
+```json
+{ "temperature": 55.2, "humidity": 62.0 }
+```
+
+Header: `x-sensor-key: sensor_zone_a_demo_key`
+
+### Realtime (Socket.io)
+
+Connect with JWT in `auth.token`. Events:
+- `climate:reading` — new reading
+- `climate:alert` — new alert
+
+Email alerts send when `SMTP_*` env vars are set; otherwise logged to the API console.
 
 ## Health
 
 `GET /api/health` — `{ status, database }`
+
+## Reports & export
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/reports/inventory` | Yes | Summary + by region/varietal/vintage |
+| GET | `/api/reports/value` | Yes | Collection totals + top wines |
+| GET | `/api/reports/climate` | Yes | Trends (`?days=7`) |
+| GET | `/api/reports/export/csv` | Yes | Inventory CSV (supports inventory filters) |
+| GET | `/api/reports/export/pdf` | Yes | Inventory PDF |
+
+## Inventory filters & valuation
+
+`GET /api/inventory` accepts: `q`, `region`, `varietal`, `vintageMin`, `vintageMax`, `collectionId`, `sort`, `order`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/inventory/filters/options` | Yes | Distinct regions/varietals |
+| POST | `/api/inventory/valuate` | Yes | Estimate from body (no persist) |
+| POST | `/api/inventory/:id/valuate` | Yes | Estimate + optionally persist (`persist: true`) |

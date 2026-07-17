@@ -56,7 +56,7 @@ npm run dev
 | Admin | `admin@oenivault.ai` | `Admin123!` |
 | Customer | `collector@example.com` | `Customer123!` |
 
-## Phase 1 (this branch)
+## Phase 1 (complete)
 
 - [x] Signup / login / logout / refresh
 - [x] Role-based access (admin vs customer)
@@ -64,6 +64,28 @@ npm run dev
 - [x] Collections
 - [x] Customer portal (own collection only)
 - [x] Admin dashboard (all customers + collections)
+
+## Phase 2 (climate)
+
+- [x] Sensor ingest via API key (`POST /api/climate/ingest`)
+- [x] Real-time Socket.io readings + alerts
+- [x] Threshold alert engine + in-app toasts
+- [x] Email notifications when SMTP configured (otherwise console log)
+- [x] `/climate` page + dashboard snapshots
+
+```bash
+# Simulate IoT sensors (separate terminal)
+cd backend && npm run simulate:climate
+# Force alerts:
+SIMULATE_ALERT=1 npm run simulate:climate
+```
+
+## Phase 3 (intelligence)
+
+- [x] Wine valuation estimates (heuristic + optional `VALUATION_API_URL`)
+- [x] Inventory search & filters
+- [x] Reports: inventory / value / climate
+- [x] Export CSV + PDF
 
 ## Repo layout
 

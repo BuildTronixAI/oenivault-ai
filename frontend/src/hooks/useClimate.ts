@@ -1,26 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
-import type { Alert } from '../types';
+import { useContext } from 'react';
+import { ClimateContext } from '../context/ClimateContext';
 
 export function useClimate() {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await apiRequest<{ alerts: Alert[] }>('/api/climate/alerts');
-      setAlerts(res.alerts);
-    } catch {
-      setAlerts([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
-
-  return { alerts, loading, refresh };
+  const ctx = useContext(ClimateContext);
+  if (!ctx) {
+    throw new Error('useClimate must be used within ClimateProvider');
+  }
+  return ctx;
 }
+
+export { ClimateProvider } from '../context/ClimateContext';
