@@ -292,8 +292,8 @@ export async function listCollections(user: AuthUser) {
 
   const result = await pool.query(
     `SELECT c.*,
-            (SELECT COUNT(*)::int FROM wines w WHERE w.collection_id = c.id) AS wine_count,
-            (SELECT COALESCE(SUM(w.estimated_value * w.quantity), 0) FROM wines w WHERE w.collection_id = c.id) AS total_value
+            (SELECT COUNT(*)::int FROM wines w WHERE w.collection_id = c.id AND w.deleted_at IS NULL) AS wine_count,
+            (SELECT COALESCE(SUM(w.estimated_value * w.quantity), 0) FROM wines w WHERE w.collection_id = c.id AND w.deleted_at IS NULL) AS total_value
      FROM collections c
      WHERE c.customer_id = $1
      ORDER BY c.created_at DESC`,
