@@ -10,7 +10,10 @@
     "start": "node dist/index.js",
     "seed": "tsx src/scripts/seed.ts",
     "simulate:climate": "tsx src/scripts/simulateClimate.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/tests/**/*.test.ts",
+    "test:superset": "tsx --test src/tests/phase1.superset.test.ts",
+    "test:phase1": "tsx --test src/tests/phase1.regression.test.ts src/tests/phase1.superset.test.ts"
   },
   "engines": {
     "node": ">=20"
