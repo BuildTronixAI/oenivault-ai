@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useInventory } from '../hooks/useInventory';
 import { WineList } from '../components/Inventory/WineList';
@@ -20,16 +20,27 @@ export function InventoryPage() {
     createCollection,
     updateWine,
     deleteWine,
+    importCsv,
     valuateWine,
     downloadExport,
     refresh,
   } = useInventory();
-  const [mode, setMode] = useState<'list' | 'add' | 'edit' | 'collection'>('list');
+  const [mode, setMode] = useState<'list' | 'add' | 'edit' | 'collection' | 'import'>('list');
   const [selected, setSelected] = useState<Wine | null>(null);
   const [collectionName, setCollectionName] = useState('');
   const [collectionError, setCollectionError] = useState<string | null>(null);
   const [creatingCollection, setCreatingCollection] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [importCollectionId, setImportCollectionId] = useState('');
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    window.setTimeout(() => setToast((t) => (t === msg ? null : t)), 4000);
+  }
 
   async function handleAdd(input: WineInput) {
     await addWine(input);
@@ -77,8 +88,40 @@ export function InventoryPage() {
     }
   }
 
+  async function handleImportFile(file: File) {
+    const collectionId = importCollectionId || collections[0]?.id;
+    if (!collectionId) {
+      setImportError('Select a collection first.');
+      return;
+    }
+    setImporting(true);
+    setImportError(null);
+    try {
+      const csv = await file.text();
+      const res = await importCsv(csv, collectionId);
+      const count = res.imported ?? res.created ?? res.wines?.length;
+      showToast(
+        res.message ??
+          (count != null ? `Imported ${count} wine(s).` : 'CSV import complete.')
+      );
+      await refresh();
+      setMode('list');
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Import failed');
+    } finally {
+      setImporting(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="relative space-y-6 animate-fade-in">
+      {toast && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-sm animate-fade-up border border-gold-500/50 bg-cellar-900 px-4 py-3 shadow-lg">
+          <p className="text-sm text-parchment-50">{toast}</p>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-semibold text-parchment-50 md:text-4xl">Inventory</h1>
@@ -93,6 +136,17 @@ export function InventoryPage() {
             </button>
             <button type="button" className="btn-secondary" onClick={() => void handleExport('pdf')}>
               Export PDF
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                setImportCollectionId(collections[0]?.id ?? '');
+                setImportError(null);
+                setMode('import');
+              }}
+            >
+              Import CSV
             </button>
             {!isAdmin && (
               <button type="button" className="btn-secondary" onClick={() => setMode('collection')}>
@@ -116,6 +170,58 @@ export function InventoryPage() {
           collections={collections}
           onChange={setFilters}
         />
+      )}
+
+      {mode === 'import' && (
+        <div className="max-w-md space-y-4 border border-cellar-700 bg-cellar-900/40 p-4 md:p-6">
+          <h2 className="font-display text-2xl text-gold-300">Import CSV</h2>
+          <p className="text-sm text-parchment-200/60">
+            Upload a CSV with columns such as name, vintage, region, varietal, quantity. Rows are
+            imported into the selected collection.
+          </p>
+          <div>
+            <label className="label-field" htmlFor="import-coll">
+              Collection
+            </label>
+            <select
+              id="import-coll"
+              className="input-field"
+              value={importCollectionId}
+              onChange={(e) => setImportCollectionId(e.target.value)}
+              required
+            >
+              {collections.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {isAdmin && c.customer_name ? `${c.name} · ${c.customer_name}` : c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label-field" htmlFor="csv-file">
+              CSV file
+            </label>
+            <input
+              id="csv-file"
+              ref={fileRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="input-field file:mr-3 file:border-0 file:bg-transparent file:text-sm file:text-gold-400"
+              disabled={importing || collections.length === 0}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void handleImportFile(file);
+              }}
+            />
+          </div>
+          {importError && <p className="text-sm text-burgundy-400">{importError}</p>}
+          {collections.length === 0 && (
+            <p className="text-sm text-burgundy-400">Create a collection before importing.</p>
+          )}
+          <button type="button" className="btn-secondary" onClick={() => setMode('list')}>
+            Cancel
+          </button>
+        </div>
       )}
 
       {mode === 'collection' && (
@@ -150,7 +256,12 @@ export function InventoryPage() {
       )}
 
       {mode === 'add' && (
-        <AddWine collections={collections} onSubmit={handleAdd} onCancel={() => setMode('list')} />
+        <AddWine
+          collections={collections}
+          isAdmin={isAdmin}
+          onSubmit={handleAdd}
+          onCancel={() => setMode('list')}
+        />
       )}
 
       {mode === 'edit' && selected && (
@@ -177,7 +288,14 @@ export function InventoryPage() {
               setMode('edit');
             }}
             onDelete={async (id) => {
-              await deleteWine(id);
+              try {
+                const res = await deleteWine(id);
+                if (res?.softDeleted || res?.archived || res?.deleted_at) {
+                  showToast('Archived');
+                }
+              } catch (err) {
+                showToast(err instanceof Error ? err.message : 'Delete failed');
+              }
             }}
           />
         </>

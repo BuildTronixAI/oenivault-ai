@@ -16,7 +16,8 @@ function timeAgo(iso: string | null) {
 
 export function ClimateMonitor({ compact = false }: { compact?: boolean }) {
   const { isAdmin } = useAuth();
-  const { latest, alerts, loading, live, resolveAlert, thresholds } = useClimate();
+  const { latest, alerts, loading, live, resolveAlert, acknowledgeAlert, thresholds } =
+    useClimate();
 
   if (loading && latest.length === 0) {
     return <p className="text-sm text-parchment-200/50">Loading climate…</p>;
@@ -76,16 +77,28 @@ export function ClimateMonitor({ compact = false }: { compact?: boolean }) {
                   <span className="ml-2 text-parchment-200/80">{a.message}</span>
                   <p className="mt-0.5 text-xs text-parchment-200/40">
                     {a.alert_type} · {new Date(a.created_at).toLocaleString()}
+                    {a.acknowledged_at ? ' · Acknowledged' : ''}
                   </p>
                 </div>
                 {isAdmin && (
-                  <button
-                    type="button"
-                    className="btn-secondary !py-1 !text-xs"
-                    onClick={() => void resolveAlert(a.id)}
-                  >
-                    Resolve
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    {!a.acknowledged_at && (
+                      <button
+                        type="button"
+                        className="btn-secondary !py-1 !text-xs"
+                        onClick={() => void acknowledgeAlert(a.id).catch(() => undefined)}
+                      >
+                        Acknowledge
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="btn-secondary !py-1 !text-xs"
+                      onClick={() => void resolveAlert(a.id).catch(() => undefined)}
+                    >
+                      Resolve
+                    </button>
+                  </div>
                 )}
               </li>
             ))}

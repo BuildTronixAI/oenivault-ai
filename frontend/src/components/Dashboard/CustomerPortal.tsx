@@ -60,7 +60,38 @@ export function CustomerPortal() {
             </li>
           ))}
           {!loading && wines.length === 0 && (
-            <li className="py-8 text-center text-parchment-200/50">No wines in your collection yet.</li>
+            <li className="space-y-3 py-8 text-center">
+              <p className="text-parchment-200/60">Your cellar is empty — get started:</p>
+              <ol className="mx-auto max-w-sm space-y-2 text-left text-sm text-parchment-200/70">
+                <li className="flex gap-2">
+                  <span className="text-gold-400">1.</span>
+                  <span>
+                    <Link to="/inventory" className="text-gold-400 hover:underline">
+                      Add a collection
+                    </Link>{' '}
+                    to organize bottles
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-gold-400">2.</span>
+                  <span>
+                    <Link to="/inventory" className="text-gold-400 hover:underline">
+                      Add a wine
+                    </Link>{' '}
+                    to your inventory
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-gold-400">3.</span>
+                  <span>
+                    <Link to="/climate" className="text-gold-400 hover:underline">
+                      View climate
+                    </Link>{' '}
+                    for your vault conditions
+                  </span>
+                </li>
+              </ol>
+            </li>
           )}
         </ul>
       </section>

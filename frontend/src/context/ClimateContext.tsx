@@ -14,12 +14,19 @@ import {
   onClimateAlert,
   onClimateReading,
 } from '../services/websocket';
-import type { Alert, ClimateReading, ClimateThresholds, LatestClimate } from '../types';
+import type {
+  Alert,
+  ClimateReading,
+  ClimateSensor,
+  ClimateThresholds,
+  LatestClimate,
+} from '../types';
 
 export interface ClimateContextValue {
   alerts: Alert[];
   latest: LatestClimate[];
   readings: ClimateReading[];
+  sensors: ClimateSensor[];
   thresholds: ClimateThresholds | null;
   loading: boolean;
   live: boolean;
@@ -27,6 +34,15 @@ export interface ClimateContextValue {
   dismissToast: () => void;
   refresh: () => Promise<void>;
   resolveAlert: (id: string) => Promise<void>;
+  acknowledgeAlert: (id: string) => Promise<void>;
+  saveThresholds: (next: ClimateThresholds) => Promise<ClimateThresholds>;
+  createSensor: (input: {
+    sensorName: string;
+    sensorType: string;
+    location: string;
+    facilityId: string;
+  }) => Promise<ClimateSensor>;
+  muteAlerts: (hours: number) => Promise<void>;
 }
 
 export const ClimateContext = createContext<ClimateContextValue | null>(null);
@@ -35,6 +51,7 @@ export function ClimateProvider({ children }: { children: ReactNode }) {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [latest, setLatest] = useState<LatestClimate[]>([]);
   const [readings, setReadings] = useState<ClimateReading[]>([]);
+  const [sensors, setSensors] = useState<ClimateSensor[]>([]);
   const [thresholds, setThresholds] = useState<ClimateThresholds | null>(null);
   const [loading, setLoading] = useState(true);
   const [live, setLive] = useState(false);
@@ -43,16 +60,20 @@ export function ClimateProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [alertsRes, latestRes, readingsRes, threshRes] = await Promise.all([
+      const [alertsRes, latestRes, readingsRes, threshRes, sensorsRes] = await Promise.all([
         apiRequest<{ alerts: Alert[] }>('/api/climate/alerts'),
         apiRequest<{ latest: LatestClimate[] }>('/api/climate/latest'),
         apiRequest<{ readings: ClimateReading[] }>('/api/climate/readings?hours=24'),
         apiRequest<{ thresholds: ClimateThresholds }>('/api/climate/thresholds'),
+        apiRequest<{ sensors: ClimateSensor[] }>('/api/climate/sensors').catch(() => ({
+          sensors: [] as ClimateSensor[],
+        })),
       ]);
       setAlerts(alertsRes.alerts);
       setLatest(latestRes.latest);
       setReadings(readingsRes.readings);
       setThresholds(threshRes.thresholds);
+      setSensors(sensorsRes.sensors ?? []);
     } catch {
       setAlerts([]);
       setLatest([]);
@@ -65,6 +86,48 @@ export function ClimateProvider({ children }: { children: ReactNode }) {
   const resolveAlert = useCallback(async (id: string) => {
     await apiRequest(`/api/climate/alerts/${id}`, { method: 'PATCH' });
     setAlerts((prev) => prev.filter((a) => a.id !== id));
+  }, []);
+
+  const acknowledgeAlert = useCallback(async (id: string) => {
+    await apiRequest(`/api/climate/alerts/${id}/ack`, { method: 'PATCH' });
+    setAlerts((prev) =>
+      prev.map((a) =>
+        a.id === id ? { ...a, acknowledged_at: new Date().toISOString() } : a
+      )
+    );
+  }, []);
+
+  const saveThresholds = useCallback(async (next: ClimateThresholds) => {
+    const res = await apiRequest<{ thresholds: ClimateThresholds }>('/api/climate/thresholds', {
+      method: 'PUT',
+      body: JSON.stringify(next),
+    });
+    setThresholds(res.thresholds ?? next);
+    return res.thresholds ?? next;
+  }, []);
+
+  const createSensor = useCallback(
+    async (input: {
+      sensorName: string;
+      sensorType: string;
+      location: string;
+      facilityId: string;
+    }) => {
+      const res = await apiRequest<{ sensor: ClimateSensor }>('/api/climate/sensors', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      });
+      setSensors((prev) => [res.sensor, ...prev]);
+      return res.sensor;
+    },
+    []
+  );
+
+  const muteAlerts = useCallback(async (hours: number) => {
+    await apiRequest('/api/climate/mutes', {
+      method: 'POST',
+      body: JSON.stringify({ hours }),
+    });
   }, []);
 
   useEffect(() => {
@@ -124,6 +187,7 @@ export function ClimateProvider({ children }: { children: ReactNode }) {
       alerts,
       latest,
       readings,
+      sensors,
       thresholds,
       loading,
       live,
@@ -131,8 +195,27 @@ export function ClimateProvider({ children }: { children: ReactNode }) {
       dismissToast: () => setToast(null),
       refresh,
       resolveAlert,
+      acknowledgeAlert,
+      saveThresholds,
+      createSensor,
+      muteAlerts,
     }),
-    [alerts, latest, readings, thresholds, loading, live, toast, refresh, resolveAlert]
+    [
+      alerts,
+      latest,
+      readings,
+      sensors,
+      thresholds,
+      loading,
+      live,
+      toast,
+      refresh,
+      resolveAlert,
+      acknowledgeAlert,
+      saveThresholds,
+      createSensor,
+      muteAlerts,
+    ]
   );
 
   return <ClimateContext.Provider value={value}>{children}</ClimateContext.Provider>;

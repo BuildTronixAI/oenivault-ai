@@ -27,10 +27,13 @@ export async function notifyAlertEmail(alert: AlertEmailPayload) {
   const transporter = getTransporter();
   const from = process.env.SMTP_FROM || 'alerts@oenivault.ai';
 
-  const admins = await pool.query<{ email: string; full_name: string | null }>(
-    `SELECT email, full_name FROM users
-     WHERE role = 'admin'
-       AND (facility_id = $1 OR facility_id IS NULL)`,
+  const admins = await pool.query<{ email: string; full_name: string | null; user_id: string }>(
+    `SELECT u.id AS user_id, u.email, u.full_name
+     FROM users u
+     LEFT JOIN notification_preferences p ON p.user_id = u.id
+     WHERE u.role = 'admin'
+       AND (u.facility_id = $1 OR u.facility_id IS NULL)
+       AND COALESCE(p.email_alerts, TRUE) = TRUE`,
     [alert.facilityId]
   );
 

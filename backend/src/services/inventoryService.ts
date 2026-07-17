@@ -15,11 +15,14 @@ const SORT_MAP: Record<NonNullable<WineFilters['sort']>, string> = {
 
 export async function listWines(user: AuthUser, filters: WineFilters = {}) {
   const params: unknown[] = [];
-  const where: string[] = [];
+  const where: string[] = ['w.deleted_at IS NULL'];
 
   if (user.role !== 'admin') {
     params.push(user.id);
     where.push(`c.customer_id = $${params.length}`);
+  } else if (user.facilityId) {
+    params.push(user.facilityId);
+    where.push(`c.facility_id = $${params.length}`);
   }
 
   if (filters.q) {
@@ -81,14 +84,14 @@ export async function getFilterOptions(user: AuthUser) {
   const params = user.role === 'admin' ? [] : [user.id];
   const regionSql =
     user.role === 'admin'
-      ? `SELECT DISTINCT region FROM wines WHERE region IS NOT NULL AND region <> '' ORDER BY 1`
+      ? `SELECT DISTINCT region FROM wines WHERE deleted_at IS NULL AND region IS NOT NULL AND region <> '' ORDER BY 1`
       : `SELECT DISTINCT w.region FROM wines w JOIN collections c ON c.id = w.collection_id
-         WHERE c.customer_id = $1 AND w.region IS NOT NULL AND w.region <> '' ORDER BY 1`;
+         WHERE c.customer_id = $1 AND w.deleted_at IS NULL AND w.region IS NOT NULL AND w.region <> '' ORDER BY 1`;
   const varietalSql =
     user.role === 'admin'
-      ? `SELECT DISTINCT varietal FROM wines WHERE varietal IS NOT NULL AND varietal <> '' ORDER BY 1`
+      ? `SELECT DISTINCT varietal FROM wines WHERE deleted_at IS NULL AND varietal IS NOT NULL AND varietal <> '' ORDER BY 1`
       : `SELECT DISTINCT w.varietal FROM wines w JOIN collections c ON c.id = w.collection_id
-         WHERE c.customer_id = $1 AND w.varietal IS NOT NULL AND w.varietal <> '' ORDER BY 1`;
+         WHERE c.customer_id = $1 AND w.deleted_at IS NULL AND w.varietal IS NOT NULL AND w.varietal <> '' ORDER BY 1`;
 
   const [regionRes, varietalRes] = await Promise.all([
     pool.query<{ region: string }>(regionSql, params),
@@ -106,7 +109,7 @@ export async function getWine(id: string, user: AuthUser) {
     `SELECT w.*, c.customer_id
      FROM wines w
      JOIN collections c ON c.id = w.collection_id
-     WHERE w.id = $1`,
+     WHERE w.id = $1 AND w.deleted_at IS NULL`,
     [id]
   );
   const wine = result.rows[0];
@@ -209,15 +212,77 @@ export async function updateWine(
 
 export async function deleteWine(id: string, user: AuthUser) {
   await getWine(id, user);
-  await pool.query('DELETE FROM wines WHERE id = $1', [id]);
+  const result = await pool.query(
+    `UPDATE wines SET deleted_at = NOW() WHERE id = $1 RETURNING *`,
+    [id]
+  );
+  const { writeAudit } = await import('./auditService');
+  await writeAudit({
+    actorId: user.id,
+    facilityId: user.facilityId,
+    action: 'wine.archive',
+    entityType: 'wine',
+    entityId: id,
+  });
+  return { softDeleted: true, archived: true, wine: result.rows[0] };
+}
+
+export async function importCsv(user: AuthUser, csv: string, collectionId: string) {
+  await assertCollectionAccess(collectionId, user);
+  const lines = csv
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (lines.length < 2) throw new AppError('CSV must include header + rows', 400, 'VALIDATION_ERROR');
+
+  const header = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/"/g, ''));
+  const idx = (name: string) => header.indexOf(name);
+  const nameI = idx('name');
+  if (nameI < 0) throw new AppError('CSV requires a name column', 400, 'VALIDATION_ERROR');
+
+  let imported = 0;
+  const wines = [];
+  for (const line of lines.slice(1)) {
+    const cols = line.match(/("([^"]|"")*"|[^,]*)/g)?.map((c) => c.replace(/^"|"$/g, '').replace(/""/g, '"')) ?? [];
+    const name = cols[nameI]?.trim();
+    if (!name) continue;
+    const vintageRaw = idx('vintage') >= 0 ? cols[idx('vintage')] : '';
+    const quantityRaw = idx('quantity') >= 0 ? cols[idx('quantity')] : '1';
+    const valueRaw = idx('estimated_value') >= 0 ? cols[idx('estimated_value')] : '';
+    const wine = await createWine(user, {
+      collectionId,
+      name,
+      vintage: vintageRaw ? Number(vintageRaw) : null,
+      region: idx('region') >= 0 ? cols[idx('region')] || null : null,
+      varietal: idx('varietal') >= 0 ? cols[idx('varietal')] || null : null,
+      quantity: Number(quantityRaw) || 1,
+      locationCode: idx('location_code') >= 0 ? cols[idx('location_code')] || null : null,
+      notes: idx('notes') >= 0 ? cols[idx('notes')] || null : null,
+      estimatedValue: valueRaw ? Number(valueRaw) : null,
+    });
+    wines.push(wine);
+    imported += 1;
+  }
+
+  const { writeAudit } = await import('./auditService');
+  await writeAudit({
+    actorId: user.id,
+    facilityId: user.facilityId,
+    action: 'wine.import',
+    entityType: 'collection',
+    entityId: collectionId,
+    meta: { imported },
+  });
+
+  return { imported, created: imported, wines };
 }
 
 export async function listCollections(user: AuthUser) {
   if (user.role === 'admin') {
     const result = await pool.query(
       `SELECT c.*, u.full_name AS customer_name, u.email AS customer_email,
-              (SELECT COUNT(*)::int FROM wines w WHERE w.collection_id = c.id) AS wine_count,
-              (SELECT COALESCE(SUM(w.estimated_value * w.quantity), 0) FROM wines w WHERE w.collection_id = c.id) AS total_value
+              (SELECT COUNT(*)::int FROM wines w WHERE w.collection_id = c.id AND w.deleted_at IS NULL) AS wine_count,
+              (SELECT COALESCE(SUM(w.estimated_value * w.quantity), 0) FROM wines w WHERE w.collection_id = c.id AND w.deleted_at IS NULL) AS total_value
        FROM collections c
        JOIN users u ON u.id = c.customer_id
        ORDER BY c.created_at DESC`
@@ -269,7 +334,7 @@ export async function applyValuation(id: string, user: AuthUser, persist = true)
   }
 
   const result = await pool.query<Wine>(
-    `UPDATE wines SET estimated_value = $2 WHERE id = $1 RETURNING *`,
+    `UPDATE wines SET estimated_value = $2, valued_at = NOW() WHERE id = $1 RETURNING *`,
     [id, valuation.estimatedValue]
   );
   return { wine: result.rows[0], valuation };

@@ -88,8 +88,27 @@ export function useInventory(initialFilters: InventoryFilters = {}) {
   }, []);
 
   const deleteWine = useCallback(async (id: string) => {
-    await apiRequest(`/api/inventory/${id}`, { method: 'DELETE' });
+    const res = await apiRequest<{
+      softDeleted?: boolean;
+      archived?: boolean;
+      deleted_at?: string | null;
+      wine?: Wine;
+    }>(`/api/inventory/${id}`, { method: 'DELETE' });
     setWines((prev) => prev.filter((w) => w.id !== id));
+    return res;
+  }, []);
+
+  const importCsv = useCallback(async (csv: string, collectionId: string) => {
+    const res = await apiRequest<{
+      imported?: number;
+      created?: number;
+      wines?: Wine[];
+      message?: string;
+    }>('/api/inventory/import', {
+      method: 'POST',
+      body: JSON.stringify({ csv, collectionId }),
+    });
+    return res;
   }, []);
 
   const valuateWine = useCallback(async (id: string, persist = true) => {
@@ -141,6 +160,7 @@ export function useInventory(initialFilters: InventoryFilters = {}) {
     createCollection,
     updateWine,
     deleteWine,
+    importCsv,
     valuateWine,
     downloadExport,
   };

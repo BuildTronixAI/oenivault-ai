@@ -3,11 +3,12 @@ import type { Collection, WineInput } from '../../types';
 
 interface Props {
   collections: Collection[];
+  isAdmin?: boolean;
   onSubmit: (input: WineInput) => Promise<void>;
   onCancel: () => void;
 }
 
-export function AddWine({ collections, onSubmit, onCancel }: Props) {
+export function AddWine({ collections, isAdmin = false, onSubmit, onCancel }: Props) {
   const [collectionId, setCollectionId] = useState(collections[0]?.id ?? '');
   const [name, setName] = useState('');
   const [vintage, setVintage] = useState('');
@@ -67,7 +68,7 @@ export function AddWine({ collections, onSubmit, onCancel }: Props) {
           >
             {collections.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name}
+                {isAdmin && c.customer_name ? `${c.name} · ${c.customer_name}` : c.name}
               </option>
             ))}
           </select>

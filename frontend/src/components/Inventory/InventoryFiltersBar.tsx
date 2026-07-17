@@ -14,7 +14,7 @@ export function InventoryFiltersBar({ filters, regions, varietals, collections, 
   }
 
   return (
-    <div className="grid gap-3 border border-cellar-700 bg-cellar-900/30 p-4 md:grid-cols-3 lg:grid-cols-6">
+    <div className="grid grid-cols-1 gap-3 border border-cellar-700 bg-cellar-900/30 p-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
       <div className="md:col-span-2 lg:col-span-2">
         <label className="label-field" htmlFor="q">
           Search

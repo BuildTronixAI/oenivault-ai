@@ -3,12 +3,15 @@ import { useAuth } from './hooks/useAuth';
 import { AppLayout } from './components/Common/AppLayout';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { InventoryPage } from './pages/InventoryPage';
 import { CustomersPage } from './pages/CustomersPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ClimatePage } from './pages/ClimatePage';
 import { ReportsPage } from './pages/ReportsPage';
+import { AcceptInvitePage } from './pages/AcceptInvitePage';
 
 function GuestOnly({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -39,6 +42,30 @@ export default function App() {
         element={
           <GuestOnly>
             <SignupPage />
+          </GuestOnly>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <GuestOnly>
+            <ForgotPasswordPage />
+          </GuestOnly>
+        }
+      />
+      <Route
+        path="/reset-password"
+        element={
+          <GuestOnly>
+            <ResetPasswordPage />
+          </GuestOnly>
+        }
+      />
+      <Route
+        path="/accept-invite"
+        element={
+          <GuestOnly>
+            <AcceptInvitePage />
           </GuestOnly>
         }
       />

@@ -129,6 +129,18 @@ async function main() {
   console.log('  Admin:    admin@oenivault.ai / Admin123!');
   console.log('  Customer: collector@example.com / Customer123!');
   console.log('  Sensor keys: sensor_zone_a_demo_key, sensor_zone_b_demo_key');
+
+  await pool.query(
+    `INSERT INTO facility_thresholds (facility_id) VALUES ($1)
+     ON CONFLICT (facility_id) DO NOTHING`,
+    [FACILITY_ID]
+  );
+  await pool.query(
+    `INSERT INTO notification_preferences (user_id) VALUES ($1), ($2)
+     ON CONFLICT (user_id) DO NOTHING`,
+    [ADMIN_ID, CUSTOMER_ID]
+  );
+
   await pool.end();
 }
 

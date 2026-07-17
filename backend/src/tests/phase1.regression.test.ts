@@ -212,7 +212,13 @@ describe('Phase 1 regression — inventory CRUD', () => {
     assert.equal((patched.json?.wine as Json).quantity, 4);
 
     const deleted = await request('DELETE', `/api/inventory/${wineId}`, undefined, accessToken);
-    assert.equal(deleted.status, 204);
+    assert.equal(deleted.status, 200);
+    assert.equal(deleted.json?.softDeleted, true);
+
+    const listed = await request('GET', '/api/inventory', undefined, accessToken);
+    assert.equal(listed.status, 200);
+    const wines = listed.json?.wines as Json[];
+    assert.ok(!wines.some((w) => w.id === wineId));
   });
 
   it('admin can create a customer', async () => {

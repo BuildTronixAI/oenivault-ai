@@ -3,16 +3,19 @@ import { pool } from '../database/pool';
 import { AppError } from '../middleware/errorHandler';
 import { User, toPublicUser } from '../models/User';
 
-export async function listCustomers() {
+export async function listCustomers(user?: { facilityId: string | null; role: string }) {
+  const facilityId = user?.facilityId ?? null;
   const result = await pool.query(
     `SELECT u.id, u.email, u.full_name, u.role, u.facility_id, u.created_at, u.updated_at,
             (SELECT COUNT(*)::int FROM collections c WHERE c.customer_id = u.id) AS collection_count,
             (SELECT COUNT(*)::int FROM wines w
                JOIN collections c ON c.id = w.collection_id
-               WHERE c.customer_id = u.id) AS wine_count
+               WHERE c.customer_id = u.id AND w.deleted_at IS NULL) AS wine_count
      FROM users u
      WHERE u.role = 'customer'
-     ORDER BY u.created_at DESC`
+       AND ($1::uuid IS NULL OR u.facility_id = $1)
+     ORDER BY u.created_at DESC`,
+    [facilityId]
   );
   return result.rows;
 }
