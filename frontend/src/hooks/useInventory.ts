@@ -41,6 +41,18 @@ export function useInventory() {
     []
   );
 
+  const createCollection = useCallback(
+    async (input: { customerId: string; facilityId: string; name: string; totalCases?: number }) => {
+      const res = await apiRequest<{ collection: Collection }>('/api/collections', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      });
+      setCollections((prev) => [res.collection, ...prev]);
+      return res.collection;
+    },
+    []
+  );
+
   const updateWine = useCallback(async (id: string, input: Partial<WineInput>) => {
     const res = await apiRequest<{ wine: Wine }>(`/api/inventory/${id}`, {
       method: 'PATCH',
@@ -55,5 +67,15 @@ export function useInventory() {
     setWines((prev) => prev.filter((w) => w.id !== id));
   }, []);
 
-  return { wines, collections, loading, error, refresh, addWine, updateWine, deleteWine };
+  return {
+    wines,
+    collections,
+    loading,
+    error,
+    refresh,
+    addWine,
+    createCollection,
+    updateWine,
+    deleteWine,
+  };
 }

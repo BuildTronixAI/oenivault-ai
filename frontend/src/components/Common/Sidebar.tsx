@@ -8,12 +8,17 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
       : 'text-parchment-200/70 hover:bg-cellar-800 hover:text-parchment-50'
   }`;
 
-export function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void;
+  className?: string;
+}
+
+export function Sidebar({ onNavigate, className = '' }: SidebarProps) {
   const { isAdmin } = useAuth();
 
   return (
-    <aside className="hidden w-56 shrink-0 border-r border-cellar-700/80 bg-cellar-900/60 p-4 md:block">
-      <nav className="flex flex-col gap-1">
+    <aside className={`w-56 shrink-0 border-r border-cellar-700/80 bg-cellar-900/60 p-4 ${className}`}>
+      <nav className="flex flex-col gap-1" onClick={onNavigate}>
         <NavLink to="/dashboard" className={linkClass}>
           Dashboard
         </NavLink>

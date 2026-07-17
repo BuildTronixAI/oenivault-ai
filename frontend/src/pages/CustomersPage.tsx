@@ -1,14 +1,17 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { apiRequest } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 import type { User } from '../types';
 
 export function CustomersPage() {
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [collectionName, setCollectionName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -33,14 +36,33 @@ export function CustomersPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await apiRequest('/api/customers', {
+      const created = await apiRequest<{ customer: User }>('/api/customers', {
         method: 'POST',
-        body: JSON.stringify({ fullName, email, password }),
+        body: JSON.stringify({
+          fullName,
+          email,
+          password,
+          facilityId: user?.facility_id ?? null,
+        }),
       });
+
+      const name = collectionName.trim() || `${fullName}'s Collection`;
+      if (user?.facility_id && created.customer?.id) {
+        await apiRequest('/api/collections', {
+          method: 'POST',
+          body: JSON.stringify({
+            customerId: created.customer.id,
+            facilityId: user.facility_id,
+            name,
+          }),
+        });
+      }
+
       setShowForm(false);
       setFullName('');
       setEmail('');
       setPassword('');
+      setCollectionName('');
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create customer');
@@ -67,19 +89,52 @@ export function CustomersPage() {
             <label className="label-field" htmlFor="c-name">
               Full name
             </label>
-            <input id="c-name" className="input-field" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            <input
+              id="c-name"
+              className="input-field"
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
           </div>
           <div>
             <label className="label-field" htmlFor="c-email">
               Email
             </label>
-            <input id="c-email" type="email" className="input-field" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input
+              id="c-email"
+              type="email"
+              className="input-field"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div>
             <label className="label-field" htmlFor="c-pass">
               Temp password
             </label>
-            <input id="c-pass" type="password" minLength={8} className="input-field" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            <input
+              id="c-pass"
+              type="password"
+              minLength={8}
+              className="input-field"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="label-field" htmlFor="c-coll">
+              Initial collection name
+            </label>
+            <input
+              id="c-coll"
+              className="input-field"
+              placeholder="Optional — defaults to Name's Collection"
+              value={collectionName}
+              onChange={(e) => setCollectionName(e.target.value)}
+            />
           </div>
           {error && <p className="md:col-span-2 text-sm text-burgundy-400">{error}</p>}
           <button type="submit" className="btn-primary md:col-span-2" disabled={submitting}>
