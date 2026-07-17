@@ -55,7 +55,6 @@ export function initRealtime(httpServer: HttpServer) {
 
   io.on('connection', (socket: Socket) => {
     const user = socket.data.user as AuthUser;
-    socket.join('facility:all');
     if (user.facilityId) {
       socket.join(`facility:${user.facilityId}`);
     }

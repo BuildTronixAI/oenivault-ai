@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { apiRequest } from '../services/api';
 import { saveSession } from '../services/auth';
 import type { AuthResponse } from '../types';
+import { AuthShell } from '../components/Common/AuthShell';
 
 export function AcceptInvitePage() {
   const [params] = useSearchParams();
@@ -36,38 +37,35 @@ export function AcceptInvitePage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-cellar-radial px-4">
-      <div className="relative w-full max-w-md space-y-6">
-        <div className="text-center">
-          <p className="font-display text-5xl font-semibold text-gold-400">OeniVault</p>
-          <p className="mt-2 text-parchment-200/70">Accept your invite</p>
+    <AuthShell tagline="Accept your invite" subtitle="Set a password to join the vault.">
+      <form onSubmit={onSubmit} className="panel animate-fade-up-delay space-y-4 p-6">
+        {!token && (
+          <p className="text-sm text-burgundy-400">Missing invite token in the URL.</p>
+        )}
+        <div>
+          <label className="label-field" htmlFor="password">
+            Choose a password
+          </label>
+          <input
+            id="password"
+            type="password"
+            minLength={8}
+            required
+            className="input-field"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </div>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="label-field" htmlFor="password">
-              Choose a password
-            </label>
-            <input
-              id="password"
-              type="password"
-              minLength={8}
-              required
-              className="input-field"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          {error && <p className="text-sm text-burgundy-400">{error}</p>}
-          <button type="submit" className="btn-primary w-full" disabled={submitting || !token}>
-            {submitting ? 'Creating…' : 'Join OeniVault'}
-          </button>
-          <p className="text-center text-sm text-parchment-200/60">
-            <Link to="/login" className="text-gold-400 hover:underline">
-              Back to sign in
-            </Link>
-          </p>
-        </form>
-      </div>
-    </div>
+        {error && <p className="text-sm text-burgundy-400">{error}</p>}
+        <button type="submit" className="btn-primary w-full" disabled={submitting || !token}>
+          {submitting ? 'Creating…' : 'Join OeniVault'}
+        </button>
+        <p className="text-center text-sm text-parchment-200/60">
+          <Link to="/login" className="text-gold-400 hover:underline">
+            Back to sign in
+          </Link>
+        </p>
+      </form>
+    </AuthShell>
   );
 }

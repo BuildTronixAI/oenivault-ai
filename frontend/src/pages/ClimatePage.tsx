@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ClimateMonitor } from '../components/Dashboard/ClimateMonitor';
+import { PageHeader } from '../components/Common/PageHeader';
+import { Toast } from '../components/Common/Toast';
 import { useClimate } from '../hooks/useClimate';
 import { useAuth } from '../hooks/useAuth';
 import type { ClimateThresholds } from '../types';
@@ -24,6 +26,7 @@ export function ClimatePage() {
     toast,
     dismissToast,
     thresholds,
+    error,
     saveThresholds,
     createSensor,
     muteAlerts,
@@ -129,30 +132,32 @@ export function ClimatePage() {
   return (
     <div className="relative space-y-8 animate-fade-in">
       {toast && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-sm animate-fade-up border border-burgundy-500/60 bg-cellar-900 px-4 py-3 shadow-lg">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-burgundy-400">{toast.severity} alert</p>
-              <p className="mt-1 text-sm text-parchment-50">{toast.message}</p>
-            </div>
-            <button type="button" className="text-xs text-parchment-200/50 hover:text-parchment-50" onClick={dismissToast}>
-              Dismiss
-            </button>
-          </div>
-        </div>
+        <Toast
+          tone="alert"
+          message={`${toast.severity}: ${toast.message}`}
+          onDismiss={dismissToast}
+        />
       )}
 
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl font-semibold text-parchment-50 md:text-4xl">Climate</h1>
-          <p className="mt-1 text-parchment-200/65">Live vault temperature and humidity monitoring.</p>
-        </div>
-        {isAdmin && (
-          <button type="button" className="btn-secondary" onClick={() => void onMute()}>
-            Mute alerts 1h
+      <PageHeader
+        title="Climate"
+        description="Live vault temperature and humidity monitoring."
+        actions={
+          isAdmin ? (
+            <button type="button" className="btn-secondary" onClick={() => void onMute()}>
+              Mute alerts 1h
+            </button>
+          ) : undefined
+        }
+      />
+      {error && (
+        <div className="rounded-md border border-burgundy-500/40 bg-burgundy-700/20 px-4 py-3 text-sm text-burgundy-400">
+          {error}{' '}
+          <button type="button" className="underline" onClick={() => void refresh()}>
+            Retry
           </button>
-        )}
-      </div>
+        </div>
+      )}
       {muteMsg && <p className="text-sm text-gold-400">{muteMsg}</p>}
       {muteErr && <p className="text-sm text-burgundy-400">{muteErr}</p>}
 

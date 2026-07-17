@@ -6,7 +6,7 @@ import { climateThresholds as DEFAULTS } from '../config/climateThresholds';
 import { emitAlert, emitClimateReading } from '../realtime/socket';
 import { notifyAlertEmail } from './notificationService';
 import { logger } from '../utils/logger';
-import { randomToken } from '../middleware/rateLimit';
+import { randomToken } from '../utils/crypto';
 
 export interface SensorRow {
   id: string;

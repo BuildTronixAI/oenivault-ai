@@ -224,5 +224,7 @@ describe('platform hardening — climate & security', () => {
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
     assert.equal(res.headers.get('x-frame-options'), 'DENY');
+    assert.ok(res.headers.get('content-security-policy'));
+    assert.ok(res.headers.get('x-request-id'));
   });
 });

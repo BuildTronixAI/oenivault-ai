@@ -1,10 +1,14 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { pool } from '../database/pool';
 import { AppError } from '../middleware/errorHandler';
-import { AuthUser, signAccessToken, signRefreshToken } from '../middleware/auth';
+import {
+  AuthUser,
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+} from '../middleware/auth';
 import { User, toPublicUser } from '../models/User';
-import { randomToken, sha256 } from '../middleware/rateLimit';
+import { randomToken, sha256 } from '../utils/crypto';
 import { logger } from '../utils/logger';
 import nodemailer from 'nodemailer';
 
@@ -104,20 +108,7 @@ export async function login(email: string, password: string) {
 }
 
 export async function refresh(refreshToken: string) {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) throw new AppError('JWT_SECRET is not configured', 500, 'CONFIG_ERROR');
-
-  let decoded: { sub: string; type?: string };
-  try {
-    decoded = jwt.verify(refreshToken, secret) as { sub: string; type?: string };
-  } catch {
-    throw new AppError('Invalid refresh token', 401, 'INVALID_TOKEN');
-  }
-
-  if (decoded.type !== 'refresh') {
-    throw new AppError('Invalid refresh token', 401, 'INVALID_TOKEN');
-  }
-
+  const decoded = verifyRefreshToken(refreshToken);
   const result = await pool.query<User>('SELECT * FROM users WHERE id = $1', [decoded.sub]);
   const user = result.rows[0];
   if (!user) {

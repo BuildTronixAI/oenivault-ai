@@ -5,6 +5,8 @@ import { WineList } from '../components/Inventory/WineList';
 import { AddWine } from '../components/Inventory/AddWine';
 import { WineDetail } from '../components/Inventory/WineDetail';
 import { InventoryFiltersBar } from '../components/Inventory/InventoryFiltersBar';
+import { PageHeader } from '../components/Common/PageHeader';
+import { Toast } from '../components/Common/Toast';
 import type { Wine, WineInput } from '../types';
 
 export function InventoryPage() {
@@ -16,6 +18,7 @@ export function InventoryPage() {
     filters,
     setFilters,
     loading,
+    error,
     addWine,
     createCollection,
     updateWine,
@@ -116,50 +119,52 @@ export function InventoryPage() {
 
   return (
     <div className="relative space-y-6 animate-fade-in">
-      {toast && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-sm animate-fade-up border border-gold-500/50 bg-cellar-900 px-4 py-3 shadow-lg">
-          <p className="text-sm text-parchment-50">{toast}</p>
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
+
+      <PageHeader
+        title="Inventory"
+        description={isAdmin ? 'All wines across the facility.' : 'Your collection only.'}
+        actions={
+          mode === 'list' ? (
+            <>
+              <button type="button" className="btn-secondary" onClick={() => void handleExport('csv')}>
+                Export CSV
+              </button>
+              <button type="button" className="btn-secondary" onClick={() => void handleExport('pdf')}>
+                Export PDF
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  setImportCollectionId(collections[0]?.id ?? '');
+                  setImportError(null);
+                  setMode('import');
+                }}
+              >
+                Import CSV
+              </button>
+              {!isAdmin && (
+                <button type="button" className="btn-secondary" onClick={() => setMode('collection')}>
+                  New collection
+                </button>
+              )}
+              <button type="button" className="btn-primary" onClick={() => setMode('add')}>
+                Add wine
+              </button>
+            </>
+          ) : undefined
+        }
+      />
+
+      {error && (
+        <div className="rounded-md border border-burgundy-500/40 bg-burgundy-700/20 px-4 py-3 text-sm text-burgundy-400">
+          {error}{' '}
+          <button type="button" className="underline" onClick={() => void refresh()}>
+            Retry
+          </button>
         </div>
       )}
-
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl font-semibold text-parchment-50 md:text-4xl">Inventory</h1>
-          <p className="mt-1 text-parchment-200/65">
-            {isAdmin ? 'All wines across the facility.' : 'Your collection only.'}
-          </p>
-        </div>
-        {mode === 'list' && (
-          <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn-secondary" onClick={() => void handleExport('csv')}>
-              Export CSV
-            </button>
-            <button type="button" className="btn-secondary" onClick={() => void handleExport('pdf')}>
-              Export PDF
-            </button>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => {
-                setImportCollectionId(collections[0]?.id ?? '');
-                setImportError(null);
-                setMode('import');
-              }}
-            >
-              Import CSV
-            </button>
-            {!isAdmin && (
-              <button type="button" className="btn-secondary" onClick={() => setMode('collection')}>
-                New collection
-              </button>
-            )}
-            <button type="button" className="btn-primary" onClick={() => setMode('add')}>
-              Add wine
-            </button>
-          </div>
-        )}
-      </div>
-
       {exportError && <p className="text-sm text-burgundy-400">{exportError}</p>}
 
       {mode === 'list' && (
@@ -283,6 +288,7 @@ export function InventoryPage() {
             wines={wines}
             loading={loading}
             isAdmin={isAdmin}
+            onAdd={() => setMode('add')}
             onSelect={(w) => {
               setSelected(w);
               setMode('edit');

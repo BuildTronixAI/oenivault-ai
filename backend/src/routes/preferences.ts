@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/errorHandler';
 import { requireAuth, requireRole } from '../middleware/auth';
+import { parseBody, preferencesSchema } from '../utils/validation';
 import * as preferencesService from '../services/preferencesService';
 import * as auditService from '../services/auditService';
 
@@ -19,11 +20,13 @@ router.get(
 router.patch(
   '/',
   asyncHandler(async (req, res) => {
-    const preferences = await preferencesService.updatePreferences(req.user!.id, {
+    const raw = {
       emailAlerts: req.body?.email_alerts ?? req.body?.emailAlerts,
       emailDigest: req.body?.email_digest ?? req.body?.emailDigest,
       inAppAlerts: req.body?.in_app_alerts ?? req.body?.inAppAlerts,
-    });
+    };
+    const body = parseBody(preferencesSchema, raw);
+    const preferences = await preferencesService.updatePreferences(req.user!.id, body);
     res.json({ preferences });
   })
 );

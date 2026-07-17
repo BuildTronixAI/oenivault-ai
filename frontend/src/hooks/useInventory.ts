@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
-import { getAccessToken } from '../services/auth';
+import { apiRequest, downloadBlob } from '../services/api';
 import type { Collection, Wine, WineInput } from '../types';
 
 export interface InventoryFilters {
@@ -130,19 +129,10 @@ export function useInventory(initialFilters: InventoryFilters = {}) {
 
   const downloadExport = useCallback(
     async (format: 'csv' | 'pdf') => {
-      const token = getAccessToken();
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-      const res = await fetch(`${apiUrl}/api/reports/export/${format}${toQuery(filters)}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) throw new Error('Export failed');
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `oenivault-inventory.${format}`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadBlob(
+        `/api/reports/export/${format}${toQuery(filters)}`,
+        `oenivault-inventory.${format}`
+      );
     },
     [filters]
   );

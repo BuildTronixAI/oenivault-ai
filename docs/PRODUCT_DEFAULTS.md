@@ -11,6 +11,8 @@ These defaults unblock buildout. Override anytime.
 | Signup | Invite-preferred; public signup remains for demo (`ALLOW_PUBLIC_SIGNUP=true`) | Set `false` in production |
 | Password reset | Email link when SMTP configured; otherwise returns reset token in API (dev only) | |
 | Multi-facility | Soft facility scoping on admin queries | Single-facility deploy OK |
+| Access JWT TTL | `15m` default | Frontend auto-refreshes via refresh token |
+| Refresh JWT TTL | `14d` default | Prefer separate `JWT_REFRESH_SECRET` in production |
 
 ## Blocked on you (infra)
 

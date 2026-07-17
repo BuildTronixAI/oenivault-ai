@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { rateLimit } from '../middleware/rateLimit';
+import { parseBody, sensorCreateSchema, thresholdsSchema, muteSchema } from '../utils/validation';
 import * as climateService from '../services/climateService';
 
 const router = Router();
@@ -38,13 +39,12 @@ router.post(
   '/sensors',
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const sensorName = String(req.body?.sensorName ?? '').trim();
-    if (!sensorName) throw new AppError('sensorName required', 400, 'VALIDATION_ERROR');
+    const body = parseBody(sensorCreateSchema, req.body);
     const sensor = await climateService.createSensor(req.user!, {
-      sensorName,
-      sensorType: req.body?.sensorType,
-      location: req.body?.location,
-      facilityId: req.body?.facilityId,
+      sensorName: body.sensorName,
+      sensorType: body.sensorType,
+      location: body.location,
+      facilityId: body.facilityId,
     });
     res.status(201).json({ sensor });
   })
@@ -124,7 +124,7 @@ router.put(
   '/thresholds',
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const thresholds = await climateService.upsertThresholds(req.user!, {
+    const body = parseBody(thresholdsSchema, {
       tempWarnMin: Number(req.body?.tempWarnMin),
       tempWarnMax: Number(req.body?.tempWarnMax),
       tempCritMin: Number(req.body?.tempCritMin),
@@ -134,6 +134,7 @@ router.put(
       humidityCritMin: Number(req.body?.humidityCritMin),
       humidityCritMax: Number(req.body?.humidityCritMax),
     });
+    const thresholds = await climateService.upsertThresholds(req.user!, body);
     res.json({ thresholds });
   })
 );
@@ -142,8 +143,11 @@ router.post(
   '/mutes',
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const hours = Number(req.body?.hours ?? 1);
-    const mute = await climateService.muteAlerts(req.user!, hours, req.body?.alertType);
+    const body = parseBody(muteSchema, {
+      hours: req.body?.hours != null ? Number(req.body.hours) : 1,
+      alertType: req.body?.alertType,
+    });
+    const mute = await climateService.muteAlerts(req.user!, body.hours ?? 1, body.alertType);
     res.status(201).json({ mute });
   })
 );

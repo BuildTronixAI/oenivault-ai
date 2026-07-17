@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { AppLayout } from './components/Common/AppLayout';
+import { BrandLoader } from './components/Common/BrandLoader';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
@@ -15,13 +16,14 @@ import { AcceptInvitePage } from './pages/AcceptInvitePage';
 
 function GuestOnly({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <BrandLoader label="Checking session…" />;
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
   return children;
 }
 
 function AdminOnly({ children }: { children: React.ReactNode }) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, loading } = useAuth();
+  if (loading) return <BrandLoader />;
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
   return children;
 }

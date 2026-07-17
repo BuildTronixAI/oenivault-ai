@@ -25,7 +25,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="animate-fade-up-delay space-y-4">
+    <form onSubmit={onSubmit} className="panel animate-fade-up-delay space-y-4 p-6">
       <div>
         <label htmlFor="email" className="label-field">
           Email

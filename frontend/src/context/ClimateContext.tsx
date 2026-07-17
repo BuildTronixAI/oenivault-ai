@@ -29,6 +29,7 @@ export interface ClimateContextValue {
   sensors: ClimateSensor[];
   thresholds: ClimateThresholds | null;
   loading: boolean;
+  error: string | null;
   live: boolean;
   toast: Alert | null;
   dismissToast: () => void;
@@ -54,11 +55,13 @@ export function ClimateProvider({ children }: { children: ReactNode }) {
   const [sensors, setSensors] = useState<ClimateSensor[]>([]);
   const [thresholds, setThresholds] = useState<ClimateThresholds | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState(false);
   const [toast, setToast] = useState<Alert | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const [alertsRes, latestRes, readingsRes, threshRes, sensorsRes] = await Promise.all([
         apiRequest<{ alerts: Alert[] }>('/api/climate/alerts'),
@@ -74,7 +77,8 @@ export function ClimateProvider({ children }: { children: ReactNode }) {
       setReadings(readingsRes.readings);
       setThresholds(threshRes.thresholds);
       setSensors(sensorsRes.sensors ?? []);
-    } catch {
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load climate data');
       setAlerts([]);
       setLatest([]);
       setReadings([]);
@@ -190,6 +194,7 @@ export function ClimateProvider({ children }: { children: ReactNode }) {
       sensors,
       thresholds,
       loading,
+      error,
       live,
       toast,
       dismissToast: () => setToast(null),
@@ -207,6 +212,7 @@ export function ClimateProvider({ children }: { children: ReactNode }) {
       sensors,
       thresholds,
       loading,
+      error,
       live,
       toast,
       refresh,

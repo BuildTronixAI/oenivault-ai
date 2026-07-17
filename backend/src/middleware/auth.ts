@@ -28,12 +28,16 @@ interface JwtPayload {
   fullName: string | null;
 }
 
-function getSecret(): string {
+function getAccessSecret(): string {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     throw new AppError('JWT_SECRET is not configured', 500, 'CONFIG_ERROR');
   }
   return secret;
+}
+
+function getRefreshSecret(): string {
+  return process.env.JWT_REFRESH_SECRET || getAccessSecret();
 }
 
 export function signAccessToken(user: AuthUser): string {
@@ -44,23 +48,31 @@ export function signAccessToken(user: AuthUser): string {
     facilityId: user.facilityId,
     fullName: user.fullName,
   };
-  return jwt.sign(payload, getSecret(), {
-    expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'],
+  return jwt.sign(payload, getAccessSecret(), {
+    expiresIn: (process.env.JWT_EXPIRES_IN || '15m') as jwt.SignOptions['expiresIn'],
   });
 }
 
 export function signRefreshToken(user: AuthUser): string {
-  return jwt.sign({ sub: user.id, type: 'refresh' }, getSecret(), {
-    expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '30d') as jwt.SignOptions['expiresIn'],
+  return jwt.sign({ sub: user.id, type: 'refresh' }, getRefreshSecret(), {
+    expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '14d') as jwt.SignOptions['expiresIn'],
   });
 }
 
 export function verifyToken(token: string): JwtPayload {
-  const decoded = jwt.verify(token, getSecret()) as JwtPayload & { type?: string };
+  const decoded = jwt.verify(token, getAccessSecret()) as JwtPayload & { type?: string };
   if (decoded.type === 'refresh') {
     throw new AppError('Invalid access token', 401, 'INVALID_TOKEN');
   }
   return decoded;
+}
+
+export function verifyRefreshToken(token: string): { sub: string } {
+  const decoded = jwt.verify(token, getRefreshSecret()) as { sub?: string; type?: string };
+  if (decoded.type !== 'refresh' || !decoded.sub) {
+    throw new AppError('Invalid refresh token', 401, 'INVALID_TOKEN');
+  }
+  return { sub: decoded.sub };
 }
 
 export function requireAuth(req: Request, _res: Response, next: NextFunction) {

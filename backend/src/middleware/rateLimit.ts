@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from './errorHandler';
 
@@ -34,11 +33,3 @@ setInterval(() => {
     if (v.resetAt <= now) buckets.delete(k);
   }
 }, 60_000).unref?.();
-
-export function sha256(value: string): string {
-  return crypto.createHash('sha256').update(value).digest('hex');
-}
-
-export function randomToken(bytes = 32): string {
-  return crypto.randomBytes(bytes).toString('hex');
-}

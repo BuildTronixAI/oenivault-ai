@@ -4,11 +4,21 @@
 
 :root {
   --color-bg: #1a1214;
+  --color-bg-deep: #120c0e;
   --color-surface: #2a1c20;
+  --color-surface-raised: #3d282e;
+  --color-border: #5a3a44;
   --color-burgundy: #9b2d4a;
+  --color-burgundy-deep: #7a1f38;
   --color-gold: #c4a35a;
+  --color-gold-soft: #e8d5a3;
   --color-text: #f3ebe0;
   --color-muted: #b8a99a;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --shadow-panel: 0 18px 50px rgba(0, 0, 0, 0.35);
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Figtree', system-ui, sans-serif;
 }
 
 html,
@@ -19,26 +29,48 @@ body,
 
 body {
   margin: 0;
-  font-family: 'Figtree', system-ui, sans-serif;
+  font-family: var(--font-sans);
   background: var(--color-bg);
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
 }
 
+::selection {
+  background: rgba(196, 163, 90, 0.35);
+  color: var(--color-text);
+}
+
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-md bg-burgundy-600 px-4 py-2.5 text-sm font-semibold text-parchment-50 transition hover:bg-burgundy-500 focus:outline-none focus:ring-2 focus:ring-gold-500/60 disabled:opacity-50;
+    @apply inline-flex items-center justify-center rounded-md bg-burgundy-600 px-4 py-2.5 text-sm font-semibold text-parchment-50 shadow-sm transition duration-200 hover:bg-burgundy-500 hover:shadow-glow-gold focus:outline-none focus:ring-2 focus:ring-gold-500/60 disabled:opacity-50;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-md border border-cellar-600 bg-cellar-800 px-4 py-2.5 text-sm font-semibold text-parchment-100 transition hover:border-gold-500/40 hover:bg-cellar-700 focus:outline-none focus:ring-2 focus:ring-gold-500/40 disabled:opacity-50;
+    @apply inline-flex items-center justify-center rounded-md border border-cellar-600 bg-cellar-800/80 px-4 py-2.5 text-sm font-semibold text-parchment-100 transition duration-200 hover:border-gold-500/40 hover:bg-cellar-700 focus:outline-none focus:ring-2 focus:ring-gold-500/40 disabled:opacity-50;
   }
 
   .input-field {
-    @apply w-full rounded-md border border-cellar-600 bg-cellar-900 px-3 py-2.5 text-sm text-parchment-50 placeholder:text-cellar-600 outline-none transition focus:border-gold-500/50 focus:ring-1 focus:ring-gold-500/40;
+    @apply w-full rounded-md border border-cellar-600 bg-cellar-900/90 px-3 py-2.5 text-sm text-parchment-50 placeholder:text-cellar-600 outline-none transition duration-200 focus:border-gold-500/50 focus:ring-1 focus:ring-gold-500/40;
   }
 
   .label-field {
     @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-parchment-200/70;
+  }
+
+  .panel {
+    @apply rounded-lg border border-cellar-700/80 bg-cellar-900/55 shadow-panel backdrop-blur-sm;
+  }
+
+  .nav-link {
+    @apply relative block rounded-md px-3 py-2 text-sm font-medium text-parchment-200/70 transition duration-200 hover:bg-cellar-800 hover:text-parchment-50;
+  }
+
+  .nav-link-active {
+    @apply bg-burgundy-700/35 text-gold-300;
+  }
+
+  .nav-link-active::before {
+    content: '';
+    @apply absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-gold-400;
   }
 }

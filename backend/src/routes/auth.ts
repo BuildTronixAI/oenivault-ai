@@ -2,7 +2,16 @@ import { Router } from 'express';
 import { asyncHandler } from '../middleware/errorHandler';
 import { requireAuth } from '../middleware/auth';
 import { rateLimit } from '../middleware/rateLimit';
-import { parseBody, signupSchema, loginSchema } from '../utils/validation';
+import {
+  parseBody,
+  signupSchema,
+  loginSchema,
+  changePasswordSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  acceptInviteSchema,
+  refreshSchema,
+} from '../utils/validation';
 import * as authService from '../services/authService';
 
 const router = Router();
@@ -41,12 +50,8 @@ router.post(
 router.post(
   '/refresh',
   asyncHandler(async (req, res) => {
-    const refreshToken = req.body?.refreshToken as string | undefined;
-    if (!refreshToken) {
-      res.status(400).json({ error: 'refreshToken required', code: 'VALIDATION_ERROR' });
-      return;
-    }
-    const result = await authService.refresh(refreshToken);
+    const body = parseBody(refreshSchema, req.body);
+    const result = await authService.refresh(body.refreshToken);
     res.json(result);
   })
 );
@@ -64,16 +69,12 @@ router.post(
   '/change-password',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const currentPassword = req.body?.currentPassword as string | undefined;
-    const newPassword = req.body?.newPassword as string | undefined;
-    if (!currentPassword || !newPassword || newPassword.length < 8) {
-      res.status(400).json({
-        error: 'currentPassword and newPassword (min 8 chars) required',
-        code: 'VALIDATION_ERROR',
-      });
-      return;
-    }
-    const result = await authService.changePassword(req.user!.id, currentPassword, newPassword);
+    const body = parseBody(changePasswordSchema, req.body);
+    const result = await authService.changePassword(
+      req.user!.id,
+      body.currentPassword,
+      body.newPassword
+    );
     res.json(result);
   })
 );
@@ -82,8 +83,8 @@ router.post(
   '/forgot-password',
   rateLimit({ windowMs: 60_000, max: 10, keyPrefix: 'forgot' }),
   asyncHandler(async (req, res) => {
-    const email = String(req.body?.email ?? '');
-    const result = await authService.forgotPassword(email);
+    const body = parseBody(forgotPasswordSchema, req.body);
+    const result = await authService.forgotPassword(body.email);
     res.json(result);
   })
 );
@@ -92,13 +93,8 @@ router.post(
   '/reset-password',
   rateLimit({ windowMs: 60_000, max: 10, keyPrefix: 'reset' }),
   asyncHandler(async (req, res) => {
-    const token = String(req.body?.token ?? '');
-    const newPassword = String(req.body?.newPassword ?? '');
-    if (!token || newPassword.length < 8) {
-      res.status(400).json({ error: 'token and newPassword (min 8) required', code: 'VALIDATION_ERROR' });
-      return;
-    }
-    const result = await authService.resetPassword(token, newPassword);
+    const body = parseBody(resetPasswordSchema, req.body);
+    const result = await authService.resetPassword(body.token, body.newPassword);
     res.json(result);
   })
 );
@@ -107,13 +103,8 @@ router.post(
   '/accept-invite',
   rateLimit({ windowMs: 60_000, max: 20, keyPrefix: 'invite' }),
   asyncHandler(async (req, res) => {
-    const token = String(req.body?.token ?? '');
-    const password = String(req.body?.password ?? '');
-    if (!token || password.length < 8) {
-      res.status(400).json({ error: 'token and password (min 8) required', code: 'VALIDATION_ERROR' });
-      return;
-    }
-    const result = await authService.acceptInvite(token, password);
+    const body = parseBody(acceptInviteSchema, req.body);
+    const result = await authService.acceptInvite(body.token, body.password);
     res.status(201).json(result);
   })
 );

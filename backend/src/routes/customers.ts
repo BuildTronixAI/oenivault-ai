@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/errorHandler';
 import { requireAuth, requireRole } from '../middleware/auth';
-import { parseBody, customerSchema, customerUpdateSchema } from '../utils/validation';
+import { parseBody, customerSchema, customerUpdateSchema, inviteSchema } from '../utils/validation';
 import * as customerService from '../services/customerService';
 import * as authService from '../services/authService';
 
@@ -32,10 +32,11 @@ router.post(
 router.post(
   '/invite',
   asyncHandler(async (req, res) => {
+    const body = parseBody(inviteSchema, req.body);
     const result = await authService.createInvite({
-      email: String(req.body?.email ?? ''),
-      fullName: String(req.body?.fullName ?? ''),
-      facilityId: req.body?.facilityId ?? req.user!.facilityId,
+      email: body.email,
+      fullName: body.fullName,
+      facilityId: body.facilityId ?? req.user!.facilityId,
       invitedBy: req.user!.id,
     });
     res.status(201).json(result);
