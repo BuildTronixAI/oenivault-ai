@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #1a1214;
+  --color-surface: #2a1c20;
+  --color-burgundy: #9b2d4a;
+  --color-gold: #c4a35a;
+  --color-text: #f3ebe0;
+  --color-muted: #b8a99a;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Figtree', system-ui, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-md bg-burgundy-600 px-4 py-2.5 text-sm font-semibold text-parchment-50 transition hover:bg-burgundy-500 focus:outline-none focus:ring-2 focus:ring-gold-500/60 disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-md border border-cellar-600 bg-cellar-800 px-4 py-2.5 text-sm font-semibold text-parchment-100 transition hover:border-gold-500/40 hover:bg-cellar-700 focus:outline-none focus:ring-2 focus:ring-gold-500/40 disabled:opacity-50;
+  }
+
+  .input-field {
+    @apply w-full rounded-md border border-cellar-600 bg-cellar-900 px-3 py-2.5 text-sm text-parchment-50 placeholder:text-cellar-600 outline-none transition focus:border-gold-500/50 focus:ring-1 focus:ring-gold-500/40;
+  }
+
+  .label-field {
+    @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-parchment-200/70;
+  }
+}

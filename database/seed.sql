@@ -1,0 +1,6 @@
+-- Prefer: cd backend && npm run seed
+-- That script applies schema.sql and inserts bcrypt-hashed demo users.
+--
+-- Demo accounts after seed:
+--   admin@oenivault.ai / Admin123!
+--   collector@example.com / Customer123!
