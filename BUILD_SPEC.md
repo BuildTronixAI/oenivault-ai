@@ -231,11 +231,11 @@ CREATE TABLE alerts (
 ## 5. CORE FEATURES (MVP)
 
 ### Phase 1: Foundation (Week 1-2)
-- [ ] User authentication (login, signup, password reset)
-- [ ] Role-based access (admin vs. customer)
-- [ ] Basic inventory (add wine, view collection, edit/delete)
-- [ ] Customer portal (view own collection only)
-- [ ] Admin dashboard (see all collections, customers)
+- [x] User authentication (login, signup, password reset)
+- [x] Role-based access (admin vs. customer)
+- [x] Basic inventory (add wine, view collection, edit/delete)
+- [x] Customer portal (view own collection only)
+- [x] Admin dashboard (see all collections, customers)
 
 ### Phase 2: Climate Monitoring (Week 2-3)
 - [ ] Connect IoT sensors (temperature/humidity)
