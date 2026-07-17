@@ -87,3 +87,23 @@ Email alerts send when `SMTP_*` env vars are set; otherwise logged to the API co
 ## Health
 
 `GET /api/health` — `{ status, database }`
+
+## Reports & export
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/reports/inventory` | Yes | Summary + by region/varietal/vintage |
+| GET | `/api/reports/value` | Yes | Collection totals + top wines |
+| GET | `/api/reports/climate` | Yes | Trends (`?days=7`) |
+| GET | `/api/reports/export/csv` | Yes | Inventory CSV (supports inventory filters) |
+| GET | `/api/reports/export/pdf` | Yes | Inventory PDF |
+
+## Inventory filters & valuation
+
+`GET /api/inventory` accepts: `q`, `region`, `varietal`, `vintageMin`, `vintageMax`, `collectionId`, `sort`, `order`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/inventory/filters/options` | Yes | Distinct regions/varietals |
+| POST | `/api/inventory/valuate` | Yes | Estimate from body (no persist) |
+| POST | `/api/inventory/:id/valuate` | Yes | Estimate + optionally persist (`persist: true`) |

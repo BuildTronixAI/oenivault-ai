@@ -11,6 +11,7 @@ import inventoryRoutes from './routes/inventory';
 import collectionRoutes from './routes/collections';
 import customerRoutes from './routes/customers';
 import climateRoutes from './routes/climate';
+import reportRoutes from './routes/reports';
 
 dotenv.config();
 
@@ -50,6 +51,7 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/collections', collectionRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/climate', climateRoutes);
+app.use('/api/reports', reportRoutes);
 
 app.use(errorHandler);
 
