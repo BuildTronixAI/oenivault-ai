@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
-import { getAccessToken } from '../services/auth';
+import { apiRequest, downloadBlob } from '../services/api';
+import { useDebouncedValue } from './useDebouncedValue';
 import type { Collection, Wine, WineInput } from '../types';
 
 export interface InventoryFilters {
@@ -31,27 +31,34 @@ export function useInventory(initialFilters: InventoryFilters = {}) {
     varietals: [],
   });
   const [filters, setFilters] = useState<InventoryFilters>(initialFilters);
+  const debouncedFilters = useDebouncedValue(filters, 300);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const loadMeta = useCallback(async () => {
+    const [collRes, opts] = await Promise.all([
+      apiRequest<{ collections: Collection[] }>('/api/collections'),
+      apiRequest<{ regions: string[]; varietals: string[] }>('/api/inventory/filters/options'),
+    ]);
+    setCollections(collRes.collections);
+    setFilterOptions(opts);
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [wineRes, collRes, opts] = await Promise.all([
-        apiRequest<{ wines: Wine[] }>(`/api/inventory${toQuery(filters)}`),
-        apiRequest<{ collections: Collection[] }>('/api/collections'),
-        apiRequest<{ regions: string[]; varietals: string[] }>('/api/inventory/filters/options'),
-      ]);
+      const wineRes = await apiRequest<{ wines: Wine[] }>(
+        `/api/inventory${toQuery(debouncedFilters)}`
+      );
       setWines(wineRes.wines);
-      setCollections(collRes.collections);
-      setFilterOptions(opts);
+      await loadMeta();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load inventory');
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [debouncedFilters, loadMeta]);
 
   useEffect(() => {
     void refresh();
@@ -88,8 +95,27 @@ export function useInventory(initialFilters: InventoryFilters = {}) {
   }, []);
 
   const deleteWine = useCallback(async (id: string) => {
-    await apiRequest(`/api/inventory/${id}`, { method: 'DELETE' });
+    const res = await apiRequest<{
+      softDeleted?: boolean;
+      archived?: boolean;
+      deleted_at?: string | null;
+      wine?: Wine;
+    }>(`/api/inventory/${id}`, { method: 'DELETE' });
     setWines((prev) => prev.filter((w) => w.id !== id));
+    return res;
+  }, []);
+
+  const importCsv = useCallback(async (csv: string, collectionId: string) => {
+    const res = await apiRequest<{
+      imported?: number;
+      created?: number;
+      wines?: Wine[];
+      message?: string;
+    }>('/api/inventory/import', {
+      method: 'POST',
+      body: JSON.stringify({ csv, collectionId }),
+    });
+    return res;
   }, []);
 
   const valuateWine = useCallback(async (id: string, persist = true) => {
@@ -111,21 +137,12 @@ export function useInventory(initialFilters: InventoryFilters = {}) {
 
   const downloadExport = useCallback(
     async (format: 'csv' | 'pdf') => {
-      const token = getAccessToken();
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-      const res = await fetch(`${apiUrl}/api/reports/export/${format}${toQuery(filters)}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) throw new Error('Export failed');
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `oenivault-inventory.${format}`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadBlob(
+        `/api/reports/export/${format}${toQuery(debouncedFilters)}`,
+        `oenivault-inventory.${format}`
+      );
     },
-    [filters]
+    [debouncedFilters]
   );
 
   return {
@@ -141,6 +158,7 @@ export function useInventory(initialFilters: InventoryFilters = {}) {
     createCollection,
     updateWine,
     deleteWine,
+    importCsv,
     valuateWine,
     downloadExport,
   };

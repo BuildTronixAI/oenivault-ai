@@ -40,6 +40,16 @@ router.post(
 );
 
 router.post(
+  '/import',
+  asyncHandler(async (req, res) => {
+    const csv = String(req.body?.csv ?? '');
+    const collectionId = String(req.body?.collectionId ?? '');
+    const result = await inventoryService.importCsv(req.user!, csv, collectionId);
+    res.status(201).json(result);
+  })
+);
+
+router.post(
   '/valuate',
   asyncHandler(async (req, res) => {
     const valuation = await estimateValue({
@@ -81,8 +91,8 @@ router.patch(
 router.delete(
   '/:id',
   asyncHandler(async (req, res) => {
-    await inventoryService.deleteWine(req.params.id, req.user!);
-    res.status(204).send();
+    const result = await inventoryService.deleteWine(req.params.id, req.user!);
+    res.json(result);
   })
 );
 

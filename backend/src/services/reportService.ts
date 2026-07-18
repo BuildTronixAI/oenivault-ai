@@ -3,11 +3,11 @@ import { AuthUser } from '../middleware/auth';
 
 function scopeJoin(user: AuthUser): { join: string; where: string; params: unknown[] } {
   if (user.role === 'admin') {
-    return { join: '', where: '', params: [] };
+    return { join: '', where: 'WHERE w.deleted_at IS NULL', params: [] };
   }
   return {
     join: 'JOIN collections c ON c.id = w.collection_id',
-    where: 'WHERE c.customer_id = $1',
+    where: 'WHERE c.customer_id = $1 AND w.deleted_at IS NULL',
     params: [user.id],
   };
 }
@@ -86,7 +86,7 @@ export async function valueReport(user: AuthUser) {
             COALESCE(SUM(w.estimated_value * w.quantity), 0) AS total_value
      FROM collections c
      JOIN users u ON u.id = c.customer_id
-     LEFT JOIN wines w ON w.collection_id = c.id
+     LEFT JOIN wines w ON w.collection_id = c.id AND w.deleted_at IS NULL
      ${whereCustomer}
      GROUP BY c.id, c.name, u.full_name
      ORDER BY total_value DESC`,

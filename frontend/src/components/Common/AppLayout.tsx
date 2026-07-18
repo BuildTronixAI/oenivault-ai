@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ClimateProvider } from '../../hooks/useClimate';
+import { BrandLoader } from './BrandLoader';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { Footer } from './Footer';
@@ -9,11 +10,7 @@ export function AppLayout() {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-cellar-radial">
-        <p className="animate-fade-in font-display text-2xl text-gold-400">OeniVault</p>
-      </div>
-    );
+    return <BrandLoader />;
   }
 
   if (!isAuthenticated) {
@@ -22,9 +19,10 @@ export function AppLayout() {
 
   return (
     <ClimateProvider>
-      <div className="flex min-h-screen flex-col bg-cellar-radial">
+      <div className="relative flex min-h-screen flex-col bg-cellar-radial">
+        <div className="pointer-events-none absolute inset-0 opacity-20 bg-cellar-lattice" />
         <Header />
-        <div className="flex flex-1">
+        <div className="relative flex flex-1">
           <Sidebar className="hidden md:block" />
           <main className="flex-1 overflow-auto px-4 py-6 md:px-8">
             <Outlet />

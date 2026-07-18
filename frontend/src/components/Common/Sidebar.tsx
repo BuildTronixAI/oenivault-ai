@@ -2,11 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `block rounded-md px-3 py-2 text-sm font-medium transition ${
-    isActive
-      ? 'bg-burgundy-700/40 text-gold-300'
-      : 'text-parchment-200/70 hover:bg-cellar-800 hover:text-parchment-50'
-  }`;
+  `nav-link ${isActive ? 'nav-link-active' : ''}`;
 
 interface SidebarProps {
   onNavigate?: () => void;
@@ -17,7 +13,12 @@ export function Sidebar({ onNavigate, className = '' }: SidebarProps) {
   const { isAdmin } = useAuth();
 
   return (
-    <aside className={`w-56 shrink-0 border-r border-cellar-700/80 bg-cellar-900/60 p-4 ${className}`}>
+    <aside
+      className={`w-56 shrink-0 border-r border-cellar-700/70 bg-cellar-950/40 p-4 backdrop-blur-sm ${className}`}
+    >
+      <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-parchment-200/40">
+        Vault
+      </p>
       <nav className="flex flex-col gap-1" onClick={onNavigate}>
         <NavLink to="/dashboard" className={linkClass}>
           Dashboard
@@ -32,10 +33,18 @@ export function Sidebar({ onNavigate, className = '' }: SidebarProps) {
           Reports
         </NavLink>
         {isAdmin && (
-          <NavLink to="/customers" className={linkClass}>
-            Customers
-          </NavLink>
+          <>
+            <p className="mb-1 mt-4 px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-parchment-200/40">
+              Operations
+            </p>
+            <NavLink to="/customers" className={linkClass}>
+              Customers
+            </NavLink>
+          </>
         )}
+        <p className="mb-1 mt-4 px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-parchment-200/40">
+          Account
+        </p>
         <NavLink to="/settings" className={linkClass}>
           Settings
         </NavLink>

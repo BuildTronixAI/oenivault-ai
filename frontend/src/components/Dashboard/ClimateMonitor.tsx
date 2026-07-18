@@ -1,5 +1,6 @@
 import { useAuth } from '../../hooks/useAuth';
 import { useClimate } from '../../hooks/useClimate';
+import { useToast } from '../../context/ToastContext';
 
 function fmt(n: string | number | null | undefined, suffix: string) {
   if (n == null || n === '') return '—';
@@ -11,12 +12,16 @@ function timeAgo(iso: string | null) {
   const ms = Date.now() - new Date(iso).getTime();
   if (ms < 60_000) return 'Just now';
   if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}m ago`;
-  return `${Math.floor(ms / 3_600_000)}h ago`;
+  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)}h ago`;
+  const days = Math.floor(ms / 86_400_000);
+  return days >= 2 ? `${days}d ago · stale` : '1d ago · stale';
 }
 
 export function ClimateMonitor({ compact = false }: { compact?: boolean }) {
   const { isAdmin } = useAuth();
-  const { latest, alerts, loading, live, resolveAlert, thresholds } = useClimate();
+  const { pushToast } = useToast();
+  const { latest, alerts, loading, live, resolveAlert, acknowledgeAlert, thresholds } =
+    useClimate();
 
   if (loading && latest.length === 0) {
     return <p className="text-sm text-parchment-200/50">Loading climate…</p>;
@@ -26,7 +31,7 @@ export function ClimateMonitor({ compact = false }: { compact?: boolean }) {
     <div className={compact ? 'space-y-4' : 'space-y-8'}>
       <div className="flex items-center gap-2 text-xs uppercase tracking-wider">
         <span
-          className={`inline-block h-2 w-2 rounded-full ${live ? 'bg-emerald-400 animate-pulse' : 'bg-cellar-600'}`}
+          className={`inline-block h-2 w-2 rounded-full ${live ? 'status-live animate-pulse' : 'status-offline'}`}
         />
         <span className="text-parchment-200/50">{live ? 'Live' : 'Offline'}</span>
         {thresholds && (
@@ -55,7 +60,9 @@ export function ClimateMonitor({ compact = false }: { compact?: boolean }) {
         ))}
         {latest.length === 0 && (
           <p className="text-sm text-parchment-200/50 sm:col-span-2">
-            No sensor readings yet. Run <code className="text-gold-400">npm run simulate:climate</code> in backend.
+            {isAdmin
+              ? 'No sensor readings yet. Add a sensor below or wait for the vault gateway to report.'
+              : 'Sensors are not reporting yet. Contact your vault operator if this persists.'}
           </p>
         )}
       </div>
@@ -72,20 +79,46 @@ export function ClimateMonitor({ compact = false }: { compact?: boolean }) {
                 }`}
               >
                 <div>
-                  <span className="font-medium capitalize text-burgundy-400">{a.severity}</span>
+                  <span
+                    className={`font-medium capitalize ${
+                      a.severity === 'critical' ? 'text-burgundy-400' : 'text-gold-400'
+                    }`}
+                  >
+                    {a.severity}
+                  </span>
                   <span className="ml-2 text-parchment-200/80">{a.message}</span>
                   <p className="mt-0.5 text-xs text-parchment-200/40">
                     {a.alert_type} · {new Date(a.created_at).toLocaleString()}
+                    {a.acknowledged_at ? ' · Acknowledged' : ''}
                   </p>
                 </div>
                 {isAdmin && (
-                  <button
-                    type="button"
-                    className="btn-secondary !py-1 !text-xs"
-                    onClick={() => void resolveAlert(a.id)}
-                  >
-                    Resolve
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    {!a.acknowledged_at && (
+                      <button
+                        type="button"
+                        className="btn-secondary !py-1 !text-xs"
+                        onClick={() =>
+                          void acknowledgeAlert(a.id).catch((err) =>
+                            pushToast(err instanceof Error ? err.message : 'Acknowledge failed', 'alert')
+                          )
+                        }
+                      >
+                        Acknowledge
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="btn-secondary !py-1 !text-xs"
+                      onClick={() =>
+                        void resolveAlert(a.id).catch((err) =>
+                          pushToast(err instanceof Error ? err.message : 'Resolve failed', 'alert')
+                        )
+                      }
+                    >
+                      Resolve
+                    </button>
+                  </div>
                 )}
               </li>
             ))}

@@ -50,9 +50,18 @@ describe('Phase 1 route surface superset', () => {
       'POST /refresh',
       'GET /me',
       'POST /change-password',
+      'POST /forgot-password',
+      'POST /reset-password',
+      'POST /accept-invite',
     ]) {
       assert.ok(methods.includes(required), `missing auth route ${required}`);
     }
+  });
+
+  it('mounts preferences API', () => {
+    const indexSrc = fs.readFileSync(path.join(ROOT, 'src/app.ts'), 'utf8');
+    const mounts = collectRouteMounts(indexSrc);
+    assert.ok(mounts.includes('/api/preferences'), 'missing mount /api/preferences');
   });
 
   it('keeps Phase 1 inventory CRUD endpoints', () => {

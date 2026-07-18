@@ -26,7 +26,7 @@ export function SignupForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="animate-fade-up-delay space-y-4">
+    <form onSubmit={onSubmit} className="panel animate-fade-up-delay space-y-4 p-6">
       <div>
         <label htmlFor="fullName" className="label-field">
           Full name

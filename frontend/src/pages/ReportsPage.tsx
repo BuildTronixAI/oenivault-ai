@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { apiRequest } from '../services/api';
-import { getAccessToken } from '../services/auth';
+import { apiRequest, downloadBlob } from '../services/api';
+import { formatMoney } from '../utils/format';
+import { PageHeader } from '../components/Common/PageHeader';
 
 interface InventoryReport {
   totals: {
@@ -58,9 +59,7 @@ interface ClimateReport {
 }
 
 function money(n: string | number | null | undefined) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(
-    Number(n ?? 0)
-  );
+  return formatMoney(Number(n ?? 0));
 }
 
 export function ReportsPage() {
@@ -92,48 +91,46 @@ export function ReportsPage() {
   }, []);
 
   async function exportFile(format: 'csv' | 'pdf') {
-    const token = getAccessToken();
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-    const res = await fetch(`${apiUrl}/api/reports/export/${format}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    if (!res.ok) throw new Error('Export failed');
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `oenivault-inventory.${format}`;
-    a.click();
-    URL.revokeObjectURL(url);
+    await downloadBlob(`/api/reports/export/${format}`, `oenivault-inventory.${format}`);
   }
 
   if (loading) {
-    return <p className="text-parchment-200/50">Loading reports…</p>;
+    return (
+      <div className="space-y-3 animate-fade-in">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="h-24 animate-pulse rounded-lg bg-cellar-800/70" />
+        ))}
+      </div>
+    );
   }
 
   if (error) {
-    return <p className="text-burgundy-400">{error}</p>;
+    return (
+      <div className="rounded-md border border-burgundy-500/40 bg-burgundy-700/20 px-4 py-3 text-sm text-burgundy-400">
+        {error}
+      </div>
+    );
   }
 
   return (
     <div className="space-y-10 animate-fade-in">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl font-semibold text-parchment-50 md:text-4xl">Reports</h1>
-          <p className="mt-1 text-parchment-200/65">Inventory mix, collection value, and climate trends.</p>
-        </div>
-        <div className="flex gap-2">
-          <button type="button" className="btn-secondary" onClick={() => void exportFile('csv')}>
-            Export CSV
-          </button>
-          <button type="button" className="btn-secondary" onClick={() => void exportFile('pdf')}>
-            Export PDF
-          </button>
-          <Link to="/inventory" className="btn-primary">
-            Open inventory
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Reports"
+        description="Inventory mix, collection value, and climate trends."
+        actions={
+          <>
+            <button type="button" className="btn-secondary" onClick={() => void exportFile('csv')}>
+              Export CSV
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => void exportFile('pdf')}>
+              Export PDF
+            </button>
+            <Link to="/inventory" className="btn-primary">
+              Open inventory
+            </Link>
+          </>
+        }
+      />
 
       {inventory && (
         <section className="space-y-4">

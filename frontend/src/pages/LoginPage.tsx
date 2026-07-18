@@ -1,27 +1,15 @@
 import { LoginForm } from '../components/Auth/LoginForm';
+import { AuthShell } from '../components/Common/AuthShell';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export function LoginPage() {
+  useDocumentTitle('Sign in');
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-cellar-radial px-4">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-30"
-        style={{
-          backgroundImage:
-            'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23c4a35a\' fill-opacity=\'0.08\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-        }}
-      />
-      <div className="relative w-full max-w-md">
-        <div className="mb-8 animate-fade-up text-center">
-          <p className="font-display text-5xl font-semibold tracking-wide text-gold-400 md:text-6xl">
-            OeniVault
-          </p>
-          <p className="mt-2 text-sm tracking-[0.2em] text-parchment-200/55 uppercase">
-            Wine vault intelligence
-          </p>
-          <p className="mt-4 text-parchment-200/70">Sign in to manage collections and climate.</p>
-        </div>
-        <LoginForm />
-      </div>
-    </div>
+    <AuthShell
+      tagline="Wine vault intelligence"
+      subtitle="Sign in to manage collections and climate."
+    >
+      <LoginForm />
+    </AuthShell>
   );
 }

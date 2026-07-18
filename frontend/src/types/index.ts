@@ -70,6 +70,8 @@ export interface Alert {
   resolved: boolean;
   created_at: string;
   resolved_at?: string | null;
+  acknowledged_at?: string | null;
+  acknowledged_by?: string | null;
 }
 
 export interface ClimateSensor {
