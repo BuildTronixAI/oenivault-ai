@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -14,6 +15,7 @@ import {
   onClimateAlert,
   onClimateReading,
 } from '../services/websocket';
+import { useToast } from './ToastContext';
 import type {
   Alert,
   ClimateReading,
@@ -31,8 +33,6 @@ export interface ClimateContextValue {
   loading: boolean;
   error: string | null;
   live: boolean;
-  toast: Alert | null;
-  dismissToast: () => void;
   refresh: () => Promise<void>;
   resolveAlert: (id: string) => Promise<void>;
   acknowledgeAlert: (id: string) => Promise<void>;
@@ -49,6 +49,8 @@ export interface ClimateContextValue {
 export const ClimateContext = createContext<ClimateContextValue | null>(null);
 
 export function ClimateProvider({ children }: { children: ReactNode }) {
+  const { pushToast } = useToast();
+  const inAppAlertsRef = useRef(true);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [latest, setLatest] = useState<LatestClimate[]>([]);
   const [readings, setReadings] = useState<ClimateReading[]>([]);
@@ -57,7 +59,20 @@ export function ClimateProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState(false);
-  const [toast, setToast] = useState<Alert | null>(null);
+
+  useEffect(() => {
+    void apiRequest<{
+      preferences?: { in_app_alerts?: boolean };
+      in_app_alerts?: boolean;
+    }>('/api/preferences')
+      .then((res) => {
+        const prefs = res.preferences ?? res;
+        inAppAlertsRef.current = Boolean(prefs.in_app_alerts ?? true);
+      })
+      .catch(() => {
+        inAppAlertsRef.current = true;
+      });
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -172,8 +187,9 @@ export function ClimateProvider({ children }: { children: ReactNode }) {
 
     const offAlert = onClimateAlert((alert) => {
       setAlerts((prev) => [alert, ...prev.filter((a) => a.id !== alert.id)]);
-      setToast(alert);
-      window.setTimeout(() => setToast((t) => (t?.id === alert.id ? null : t)), 8000);
+      if (inAppAlertsRef.current) {
+        pushToast(`${alert.severity ?? 'Alert'}: ${alert.message ?? 'Climate alert'}`, 'alert');
+      }
     });
 
     return () => {
@@ -184,7 +200,7 @@ export function ClimateProvider({ children }: { children: ReactNode }) {
       disconnectClimateSocket();
       setLive(false);
     };
-  }, []);
+  }, [pushToast]);
 
   const value = useMemo(
     () => ({
@@ -196,8 +212,6 @@ export function ClimateProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       live,
-      toast,
-      dismissToast: () => setToast(null),
       refresh,
       resolveAlert,
       acknowledgeAlert,
@@ -214,7 +228,6 @@ export function ClimateProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       live,
-      toast,
       refresh,
       resolveAlert,
       acknowledgeAlert,

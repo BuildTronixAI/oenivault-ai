@@ -40,7 +40,31 @@ body {
   color: var(--color-text);
 }
 
+:focus-visible {
+  outline: 2px solid rgba(196, 163, 90, 0.65);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @layer components {
+  .status-live {
+    @apply bg-gold-400;
+  }
+
+  .status-offline {
+    @apply bg-cellar-600;
+  }
+
   .btn-primary {
     @apply inline-flex items-center justify-center rounded-md bg-burgundy-600 px-4 py-2.5 text-sm font-semibold text-parchment-50 shadow-sm transition duration-200 hover:bg-burgundy-500 hover:shadow-glow-gold focus:outline-none focus:ring-2 focus:ring-gold-500/60 disabled:opacity-50;
   }

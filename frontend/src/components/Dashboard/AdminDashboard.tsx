@@ -88,6 +88,11 @@ export function AdminDashboard() {
                     <EmptyState
                       title="No collections yet"
                       description="Invite a customer or create a collection to populate the vault."
+                      action={
+                        <Link to="/customers" className="btn-primary">
+                          Invite customer
+                        </Link>
+                      }
                     />
                   </td>
                 </tr>

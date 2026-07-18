@@ -15,6 +15,16 @@ export class ApiError extends Error {
 }
 
 let refreshPromise: Promise<AuthResponse> | null = null;
+let sessionExpiredNotified = false;
+
+function notifySessionExpired() {
+  if (typeof window === 'undefined' || sessionExpiredNotified) return;
+  sessionExpiredNotified = true;
+  window.dispatchEvent(new CustomEvent('oeni:session-expired'));
+  window.setTimeout(() => {
+    sessionExpiredNotified = false;
+  }, 2000);
+}
 
 async function refreshAccessToken() {
   if (!refreshPromise) {
@@ -63,6 +73,7 @@ export async function apiRequest<T>(
       return apiRequest<T>(path, options, auth, false);
     } catch {
       clearSession();
+      notifySessionExpired();
       throw new ApiError('Session expired', 401, 'SESSION_EXPIRED');
     }
   }
@@ -92,6 +103,7 @@ export async function downloadBlob(path: string, filename: string, retried = fal
       return downloadBlob(path, filename, true);
     } catch {
       clearSession();
+      notifySessionExpired();
       throw new ApiError('Session expired', 401, 'SESSION_EXPIRED');
     }
   }

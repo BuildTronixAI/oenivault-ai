@@ -7,11 +7,11 @@ interface Props {
   loading: boolean;
   isAdmin: boolean;
   onSelect: (wine: Wine) => void;
-  onDelete: (id: string) => void;
+  onArchive: (wine: Wine) => void;
   onAdd?: () => void;
 }
 
-export function WineList({ wines, loading, isAdmin, onSelect, onDelete, onAdd }: Props) {
+export function WineList({ wines, loading, isAdmin, onSelect, onArchive, onAdd }: Props) {
   if (loading) {
     return (
       <div className="space-y-3 animate-fade-in">
@@ -43,15 +43,32 @@ export function WineList({ wines, loading, isAdmin, onSelect, onDelete, onAdd }:
   return (
     <div className="panel overflow-x-auto">
       <table className="min-w-full text-left text-sm">
+        <caption className="sr-only">Wine inventory</caption>
         <thead className="bg-cellar-800/80 text-xs uppercase tracking-wide text-parchment-200/50">
           <tr>
-            <th className="px-4 py-3 font-medium">Wine</th>
-            <th className="px-4 py-3 font-medium">Vintage</th>
-            <th className="px-4 py-3 font-medium">Location</th>
-            <th className="px-4 py-3 font-medium">Qty</th>
-            <th className="px-4 py-3 font-medium">Value</th>
-            {isAdmin && <th className="px-4 py-3 font-medium">Owner</th>}
-            <th className="px-4 py-3 font-medium">Actions</th>
+            <th scope="col" className="px-4 py-3 font-medium">
+              Wine
+            </th>
+            <th scope="col" className="px-4 py-3 font-medium">
+              Vintage
+            </th>
+            <th scope="col" className="px-4 py-3 font-medium">
+              Location
+            </th>
+            <th scope="col" className="px-4 py-3 font-medium">
+              Qty
+            </th>
+            <th scope="col" className="px-4 py-3 font-medium">
+              Est. / bottle
+            </th>
+            {isAdmin && (
+              <th scope="col" className="px-4 py-3 font-medium">
+                Owner
+              </th>
+            )}
+            <th scope="col" className="px-4 py-3 font-medium">
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -88,16 +105,14 @@ export function WineList({ wines, loading, isAdmin, onSelect, onDelete, onAdd }:
                   <button
                     type="button"
                     onClick={() => onSelect(w)}
-                    className="text-xs text-gold-400 hover:underline"
+                    className="text-xs text-gold-400 hover:underline focus-visible:underline"
                   >
                     Edit
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (confirm(`Archive ${w.name}?`)) void onDelete(w.id);
-                    }}
-                    className="text-xs text-burgundy-400 hover:underline"
+                    onClick={() => onArchive(w)}
+                    className="text-xs text-burgundy-400 hover:underline focus-visible:underline"
                   >
                     Archive
                   </button>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiRequest, downloadBlob } from '../services/api';
+import { useDebouncedValue } from './useDebouncedValue';
 import type { Collection, Wine, WineInput } from '../types';
 
 export interface InventoryFilters {
@@ -30,27 +31,34 @@ export function useInventory(initialFilters: InventoryFilters = {}) {
     varietals: [],
   });
   const [filters, setFilters] = useState<InventoryFilters>(initialFilters);
+  const debouncedFilters = useDebouncedValue(filters, 300);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const loadMeta = useCallback(async () => {
+    const [collRes, opts] = await Promise.all([
+      apiRequest<{ collections: Collection[] }>('/api/collections'),
+      apiRequest<{ regions: string[]; varietals: string[] }>('/api/inventory/filters/options'),
+    ]);
+    setCollections(collRes.collections);
+    setFilterOptions(opts);
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [wineRes, collRes, opts] = await Promise.all([
-        apiRequest<{ wines: Wine[] }>(`/api/inventory${toQuery(filters)}`),
-        apiRequest<{ collections: Collection[] }>('/api/collections'),
-        apiRequest<{ regions: string[]; varietals: string[] }>('/api/inventory/filters/options'),
-      ]);
+      const wineRes = await apiRequest<{ wines: Wine[] }>(
+        `/api/inventory${toQuery(debouncedFilters)}`
+      );
       setWines(wineRes.wines);
-      setCollections(collRes.collections);
-      setFilterOptions(opts);
+      await loadMeta();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load inventory');
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [debouncedFilters, loadMeta]);
 
   useEffect(() => {
     void refresh();
@@ -130,11 +138,11 @@ export function useInventory(initialFilters: InventoryFilters = {}) {
   const downloadExport = useCallback(
     async (format: 'csv' | 'pdf') => {
       await downloadBlob(
-        `/api/reports/export/${format}${toQuery(filters)}`,
+        `/api/reports/export/${format}${toQuery(debouncedFilters)}`,
         `oenivault-inventory.${format}`
       );
     },
-    [filters]
+    [debouncedFilters]
   );
 
   return {

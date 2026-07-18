@@ -2,6 +2,7 @@ interface BrandMarkProps {
   size?: 'sm' | 'md' | 'lg' | 'hero';
   tagline?: string;
   className?: string;
+  showAi?: boolean;
 }
 
 const sizeClass = {
@@ -11,14 +12,17 @@ const sizeClass = {
   hero: 'text-5xl md:text-7xl',
 } as const;
 
-export function BrandMark({ size = 'md', tagline, className = '' }: BrandMarkProps) {
+export function BrandMark({
+  size = 'md',
+  tagline,
+  className = '',
+  showAi = true,
+}: BrandMarkProps) {
   return (
     <div className={className}>
       <p className={`font-display font-semibold tracking-wide text-gold-400 ${sizeClass[size]}`}>
         OeniVault
-        {size !== 'hero' && size !== 'lg' ? (
-          <span className="ml-1.5 text-parchment-100">AI</span>
-        ) : null}
+        {showAi ? <span className="ml-1.5 text-parchment-100">AI</span> : null}
       </p>
       {tagline ? (
         <p className="mt-2 text-sm tracking-[0.22em] text-parchment-200/55 uppercase">{tagline}</p>

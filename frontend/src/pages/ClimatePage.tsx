@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ClimateMonitor } from '../components/Dashboard/ClimateMonitor';
 import { PageHeader } from '../components/Common/PageHeader';
-import { Toast } from '../components/Common/Toast';
+import { FacilitySelect } from '../components/Common/FacilitySelect';
 import { useClimate } from '../hooks/useClimate';
 import { useAuth } from '../hooks/useAuth';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useToast } from '../context/ToastContext';
 import type { ClimateThresholds } from '../types';
 
 const EMPTY_THRESHOLDS: ClimateThresholds = {
@@ -19,12 +21,12 @@ const EMPTY_THRESHOLDS: ClimateThresholds = {
 };
 
 export function ClimatePage() {
+  useDocumentTitle('Climate');
   const { isAdmin, user } = useAuth();
+  const { pushToast } = useToast();
   const {
     readings,
     sensors,
-    toast,
-    dismissToast,
     thresholds,
     error,
     saveThresholds,
@@ -77,6 +79,7 @@ export function ClimatePage() {
     try {
       await saveThresholds(threshForm);
       setThreshMsg('Thresholds saved.');
+      pushToast('Climate thresholds saved.');
     } catch (err) {
       setThreshErr(err instanceof Error ? err.message : 'Failed to save thresholds');
     } finally {
@@ -92,7 +95,7 @@ export function ClimatePage() {
     try {
       const fid = facilityId.trim() || user?.facility_id || '';
       if (!fid) {
-        setSensorErr('Facility ID is required.');
+        setSensorErr('Select a facility.');
         return;
       }
       const sensor = await createSensor({
@@ -118,6 +121,7 @@ export function ClimatePage() {
     try {
       await muteAlerts(1);
       setMuteMsg('Alerts muted for 1 hour.');
+      pushToast('Alerts muted for 1 hour.');
     } catch (err) {
       setMuteErr(err instanceof Error ? err.message : 'Failed to mute alerts');
     }
@@ -131,14 +135,6 @@ export function ClimatePage() {
 
   return (
     <div className="relative space-y-8 animate-fade-in">
-      {toast && (
-        <Toast
-          tone="alert"
-          message={`${toast.severity}: ${toast.message}`}
-          onDismiss={dismissToast}
-        />
-      )}
-
       <PageHeader
         title="Climate"
         description="Live vault temperature and humidity monitoring."
@@ -295,18 +291,12 @@ export function ClimatePage() {
                   onChange={(e) => setLocation(e.target.value)}
                 />
               </div>
-              <div>
-                <label className="label-field" htmlFor="sensor-facility">
-                  Facility ID
-                </label>
-                <input
-                  id="sensor-facility"
-                  className="input-field"
-                  required
-                  value={facilityId}
-                  onChange={(e) => setFacilityId(e.target.value)}
-                />
-              </div>
+              <FacilitySelect
+                id="sensor-facility"
+                value={facilityId}
+                onChange={setFacilityId}
+                required
+              />
               {createdApiKey && (
                 <div className="md:col-span-2 rounded border border-gold-500/40 bg-cellar-900/60 p-3 text-sm">
                   <p className="text-xs uppercase tracking-wide text-gold-400">API key (shown once)</p>

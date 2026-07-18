@@ -1,6 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { apiRequest } from '../services/api';
+import { PageHeader } from '../components/Common/PageHeader';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useToast } from '../context/ToastContext';
 
 interface NotificationPreferences {
   email_alerts: boolean;
@@ -14,10 +17,19 @@ const DEFAULT_PREFS: NotificationPreferences = {
   in_app_alerts: true,
 };
 
+function roleLabel(role?: string | null) {
+  if (role === 'admin') return 'Facility admin';
+  if (role === 'customer') return 'Collector';
+  return role ?? '—';
+}
+
 export function SettingsPage() {
+  useDocumentTitle('Settings');
   const { user } = useAuth();
+  const { pushToast } = useToast();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -47,10 +59,10 @@ export function SettingsPage() {
             in_app_alerts: Boolean(next.in_app_alerts ?? DEFAULT_PREFS.in_app_alerts),
           });
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) {
           setPrefsUnavailable(true);
-          setPrefsError(err instanceof Error ? err.message : 'Preferences unavailable');
+          setPrefsError('Preferences service is temporarily unavailable.');
         }
       } finally {
         if (!cancelled) setPrefsLoading(false);
@@ -64,6 +76,10 @@ export function SettingsPage() {
 
   async function onChangePassword(e: FormEvent) {
     e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setError('New passwords do not match.');
+      return;
+    }
     setSubmitting(true);
     setMessage(null);
     setError(null);
@@ -73,8 +89,10 @@ export function SettingsPage() {
         body: JSON.stringify({ currentPassword, newPassword }),
       });
       setMessage('Password updated.');
+      pushToast('Password updated.');
       setCurrentPassword('');
       setNewPassword('');
+      setConfirmPassword('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update password');
     } finally {
@@ -103,6 +121,7 @@ export function SettingsPage() {
       });
       setPrefsUnavailable(false);
       setPrefsMessage('Notification preferences saved.');
+      pushToast('Preferences saved.');
     } catch (err) {
       setPrefsError(err instanceof Error ? err.message : 'Failed to save preferences');
     } finally {
@@ -112,11 +131,9 @@ export function SettingsPage() {
 
   return (
     <div className="max-w-lg space-y-8 animate-fade-in">
-      <div>
-        <h1 className="font-display text-3xl font-semibold text-parchment-50 md:text-4xl">Settings</h1>
-        <p className="mt-1 text-parchment-200/65">Profile and account preferences.</p>
-      </div>
-      <dl className="space-y-4 border-t border-cellar-700 pt-4">
+      <PageHeader title="Settings" description="Profile, security, and notification preferences." />
+
+      <dl className="panel space-y-4 p-4 md:p-6">
         <div>
           <dt className="text-xs uppercase tracking-wide text-parchment-200/50">Name</dt>
           <dd className="mt-1 text-parchment-50">{user?.full_name}</dd>
@@ -127,11 +144,17 @@ export function SettingsPage() {
         </div>
         <div>
           <dt className="text-xs uppercase tracking-wide text-parchment-200/50">Role</dt>
-          <dd className="mt-1 capitalize text-parchment-50">{user?.role}</dd>
+          <dd className="mt-1 text-parchment-50">{roleLabel(user?.role)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-parchment-200/50">Facility</dt>
+          <dd className="mt-1 font-mono text-sm text-parchment-200/70">
+            {user?.facility_id ?? 'Not assigned'}
+          </dd>
         </div>
       </dl>
 
-      <form onSubmit={onChangePassword} className="space-y-4 border-t border-cellar-700 pt-6">
+      <form onSubmit={onChangePassword} className="panel space-y-4 p-4 md:p-6">
         <h2 className="font-display text-xl text-gold-300">Change password</h2>
         <div>
           <label className="label-field" htmlFor="current">
@@ -140,6 +163,7 @@ export function SettingsPage() {
           <input
             id="current"
             type="password"
+            autoComplete="current-password"
             required
             className="input-field"
             value={currentPassword}
@@ -147,34 +171,55 @@ export function SettingsPage() {
           />
         </div>
         <div>
-          <label className="label-field" htmlFor="next">
+          <label className="label-field" htmlFor="new-pass">
             New password
           </label>
           <input
-            id="next"
+            id="new-pass"
             type="password"
+            autoComplete="new-password"
             minLength={8}
             required
             className="input-field"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
           />
+          <p className="mt-1 text-xs text-parchment-200/50">At least 8 characters.</p>
+        </div>
+        <div>
+          <label className="label-field" htmlFor="confirm-pass">
+            Confirm new password
+          </label>
+          <input
+            id="confirm-pass"
+            type="password"
+            autoComplete="new-password"
+            minLength={8}
+            required
+            className="input-field"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
         </div>
         {message && <p className="text-sm text-gold-400">{message}</p>}
         {error && <p className="text-sm text-burgundy-400">{error}</p>}
-        <button type="submit" className="btn-primary" disabled={submitting}>
+        <button type="submit" className="btn-primary" disabled={submitting} aria-busy={submitting}>
           {submitting ? 'Updating…' : 'Update password'}
         </button>
       </form>
 
-      <form onSubmit={onSavePrefs} className="space-y-4 border-t border-cellar-700 pt-6">
+      <form onSubmit={onSavePrefs} className="panel space-y-4 p-4 md:p-6">
         <h2 className="font-display text-xl text-gold-300">Notification preferences</h2>
+        <p className="text-sm text-parchment-200/60">
+          In-app toasts appear across the vault when climate alerts fire. Email digests summarize
+          weekly inventory and climate activity when SMTP is configured.
+        </p>
         {prefsLoading ? (
           <p className="text-sm text-parchment-200/50">Loading preferences…</p>
         ) : prefsUnavailable ? (
           <p className="text-sm text-parchment-200/55">
-            Notification preferences are not available yet. You can still change your password above.
-            {prefsError ? ` (${prefsError})` : ''}
+            Notification preferences are not available right now. You can still change your password
+            above.
           </p>
         ) : (
           <>
@@ -212,7 +257,12 @@ export function SettingsPage() {
           <p className="text-sm text-burgundy-400">{prefsError}</p>
         )}
         {!prefsLoading && (
-          <button type="submit" className="btn-primary" disabled={prefsSaving || prefsUnavailable}>
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={prefsSaving || prefsUnavailable}
+            aria-busy={prefsSaving}
+          >
             {prefsSaving ? 'Saving…' : 'Save preferences'}
           </button>
         )}
